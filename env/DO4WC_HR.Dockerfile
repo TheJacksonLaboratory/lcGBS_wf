@@ -9,4 +9,4 @@ RUN Rscript -e "install.packages('Rcpp', dependencies=TRUE, repos='http://cran.u
 RUN Rscript -e "remotes::install_github('rqtl/qtl2')"
 RUN Rscript -e "remotes::install_github('rqtl/qtl2convert')"
 RUN Rscript -e "remotes::install_github('rqtl/qtl2fst')"
-RUN Rscript -e "remotes::install_github('rqtl/qtl2ggplot')"
+RUN Rscript -e "remotes::install_github('byandell/qtl2ggplot')"

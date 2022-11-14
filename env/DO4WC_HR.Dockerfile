@@ -1,5 +1,6 @@
 FROM continuumio/miniconda
 LABEL Sam Widmayer <sjwidmay@gmail.com>
+
 # Installing bioconductor utils
 COPY DO_4WC.yml .
 RUN \

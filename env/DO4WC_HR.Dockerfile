@@ -1,9 +1,9 @@
 FROM continuumio/miniconda
 LABEL Sam Widmayer <sjwidmay@gmail.com>
 # Installing bioconductor utils
-COPY DO_4WC_conda.yml .
+COPY DO_4WC.yml .
 RUN \
-   conda env update -n root -f DO_4WC_conda.yml \
+   conda env update -n root -f DO_4WC.yml \
 && conda clean -a
 # Installing remaining packages
 FROM rocker/r-ver:4.2

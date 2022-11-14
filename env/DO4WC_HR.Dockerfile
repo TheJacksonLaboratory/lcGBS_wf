@@ -10,7 +10,8 @@ RUN Rscript -e "remotes::install_github('rqtl/qtl2')"
 RUN Rscript -e "remotes::install_github('rqtl/qtl2convert')"
 RUN Rscript -e "remotes::install_github('rqtl/qtl2fst')"
 RUN Rscript -e "remotes::install_github('byandell/qtl2ggplot')"
+
+FROM continuumio/miniconda
 # Installing bioconductor utils
-RUN Rscript -e "install.packages('BiocManager')"
-RUN Rscript -e "BiocManager::install('VariantAnnotation')"
-RUN Rscript -e "BiocManager::install('GenomicRanges')"
+RUN conda install -c bioconda bioconductor-genomicranges
+RUN conda install -c bioconda bioconductor-variantannotation

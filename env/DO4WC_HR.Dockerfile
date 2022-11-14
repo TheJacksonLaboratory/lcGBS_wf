@@ -1,7 +1,13 @@
-FROM rocker/r-ver:4.2
+FROM continuumio/miniconda
 LABEL Sam Widmayer <sjwidmay@gmail.com>
+# Installing bioconductor utils
+COPY DO_4WC_conda.yml .
+RUN \
+   conda env update -n root -f DO_4WC_conda.yml \
+&& conda clean -a
+# Installing remaining packages
+FROM rocker/r-ver:4.2
 RUN Rscript -e "install.packages('parallel', dependencies=TRUE, repos='http://cran.us.r-project.org')"
-RUN Rscript -e "install.packages('data.table', dependencies=TRUE, repos='http://cran.us.r-project.org')"
 RUN Rscript -e "install.packages('vroom', dependencies=TRUE, repos='http://cran.us.r-project.org')"
 # Installing qtl2 utils
 RUN Rscript -e "install.packages('remotes', dependencies=TRUE, repos='http://cran.us.r-project.org')"
@@ -10,8 +16,3 @@ RUN Rscript -e "remotes::install_github('rqtl/qtl2')"
 RUN Rscript -e "remotes::install_github('rqtl/qtl2convert')"
 RUN Rscript -e "remotes::install_github('rqtl/qtl2fst')"
 RUN Rscript -e "remotes::install_github('byandell/qtl2ggplot')"
-
-FROM continuumio/miniconda
-# Installing bioconductor utils
-RUN conda install -c bioconda bioconductor-genomicranges
-RUN conda install -c bioconda bioconductor-variantannotation

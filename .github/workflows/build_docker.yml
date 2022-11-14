@@ -1,0 +1,30 @@
+name: Build HR Container (env/DO4WC_HR.Dockerfile)
+
+on:
+  push:
+    paths:
+    - 'env/DO4WC_HR.Dockerfile'
+    - '.github/workflows/build_docker.yml'
+  pull_request:
+    paths:
+    - 'env/DO4WC_HR.Dockerfile'
+    - '.github/workflows/build_docker.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    # Build Tools
+    - name: Build and Publish
+      uses: elgohr/Publish-Docker-Github-Action@v4
+      with:
+        name: sjwidmay/DO4WC_HR
+        username: ${{ secrets.SJW_DOCKER_USER }}
+        password: ${{ secrets.SJW_DOCKER_PASS }}
+        snapshot: true
+        dockerfile: DO4WC_HR.Dockerfile
+        workdir: "env"
+        tags: "latest"
+        cache: true

@@ -1,3 +1,5 @@
+#!/usr/bin/env Rscript
+
 # convert GeneSeek FinalReport files to format for R/qtl2
 #
 # - creates one genotype CSV file for each chromosome
@@ -9,7 +11,6 @@
 library(data.table)
 library(qtl2convert)
 library(vroom)
-library(beepr)
 library(parallel)
 
 # file containing allele codes for GigaMUGA data

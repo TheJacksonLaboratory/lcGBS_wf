@@ -7,5 +7,4 @@ channels:
 dependencies:
   - r=4.2.0
   - r-data.table
-  - bioconductor-genomicranges
   - bioconductor-variantannotation

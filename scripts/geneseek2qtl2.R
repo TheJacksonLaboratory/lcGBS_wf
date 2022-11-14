@@ -10,6 +10,7 @@ library(data.table)
 library(qtl2convert)
 library(vroom)
 library(beepr)
+library(parallel)
 
 # file containing allele codes for GigaMUGA data
 #   - from GM_processed_files.zip, https://doi.org/10.6084/m9.figshare.5404759
@@ -47,7 +48,8 @@ for(ifile in ifiles) {
 
     cat(" -Reading data\n")
     # g <- data.table::fread(ifile, skip = 9)
-    g <- vroom::vroom(file = ifile, skip = 9)
+    g <- vroom::vroom(file = ifile, skip = 9, 
+                      num_threads = parallel::detectCores())
     # subset to the markers in the codes object
     g <- g[g[,"SNP Name"] %in% codes[,"marker"],]
 

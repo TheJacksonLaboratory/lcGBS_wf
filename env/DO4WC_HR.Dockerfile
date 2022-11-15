@@ -5,7 +5,6 @@ RUN apt-get install -y \
     libxml2 \
     libxt6 \
     zlib1g-dev \
-    zlib-devel \
     libbz2-dev \
     liblzma-dev \
     libpcre3-dev \

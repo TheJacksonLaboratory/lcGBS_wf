@@ -1,5 +1,6 @@
 FROM rocker/r-ver:4.2
 LABEL Sam Widmayer <sjwidmay@gmail.com>
+RUN apt -y install zlib1g-dev
 RUN Rscript -e "install.packages('parallel', dependencies=TRUE, repos='http://cran.us.r-project.org')"
 RUN Rscript -e "install.packages('data.table', dependencies=TRUE, repos='http://cran.us.r-project.org')"
 RUN Rscript -e "install.packages('vroom', dependencies=TRUE, repos='http://cran.us.r-project.org')"

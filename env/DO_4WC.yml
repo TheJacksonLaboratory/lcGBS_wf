@@ -6,7 +6,6 @@ channels:
   - conda-forge
 dependencies:
   - r=4.2.0
-  - bioconductor-variantannotation
   - r-vroom
   - r-data.table
   - r-tidyverse

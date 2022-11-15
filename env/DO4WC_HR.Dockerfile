@@ -1,5 +1,6 @@
 FROM ubuntu:latest
 LABEL Sam Widmayer <sjwidmay@gmail.com>
+RUN apt-get update
 RUN apt-get install -y \
     libxml2 \
     libxt6 \

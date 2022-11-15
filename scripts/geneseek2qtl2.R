@@ -28,7 +28,7 @@ ifiles <- "data/neogen/Daniel_Gatti_MURGIGV01_20221006_FinalReport.txt"
 
 # file "stem" for output files
 # output files will be like "gm4qtl2_geno19.csv"
-ostem <- "DO_4WC"
+ostem <- "data/DO_4WC"
 
 # version of data.table::fread() where data.table=FALSE is the default
 myfread <- function(filename, data.table=FALSE, ...) data.table::fread(filename, data.table=data.table, ...)
@@ -51,7 +51,7 @@ for(ifile in ifiles) {
 
     cat(" -Reading data\n")
     # g <- data.table::fread(ifile, skip = 9)
-    g <- vroom::vroom(file = ifile, skip = 9, 
+    g <- vroom::vroom(file = ifile, skip = 9,
                       num_threads = parallel::detectCores())
     g %<>%
         dplyr::filter(`SNP Name` %in% codes$marker)
@@ -140,9 +140,12 @@ qtl2convert::write2csv(cbind(marker=rownames(cYint), cYint),
 
 # write data to chromosome-specific files
 cat(" -Writing genotypes\n")
-for(chr in c(1:19,"X","Y","M")) {
-    mar <- codes[codes$chr==chr,"marker"]
-    g <- full_geno[mar,]
+for(chrom in c(1:19,"X","Y","M")) {
+    # mar <- codes[codes$chr==chr,"marker"]
+    mar <- codes %>%
+      dplyr::filter(chr == chrom) %>%
+      dplyr::select(marker)
+    g <- full_geno[rownames(full_geno) %in% mar$marker,]
     qtl2convert::write2csv(cbind(marker=rownames(g), g),
                            paste0(ostem, "_geno", chr, ".csv"),
                            paste0(ostem, " genotypes for chr ", chr),

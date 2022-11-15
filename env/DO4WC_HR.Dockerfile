@@ -27,4 +27,4 @@ RUN Rscript -e "remotes::install_github('rqtl/qtl2fst')"
 RUN Rscript -e "remotes::install_github('byandell/qtl2ggplot')"
 # Installing bioconductor utils
 RUN Rscript -e "install.packages('BiocManager')"
-RUN Rscript -e "BiocManager::install('VariantAnnotation)"
+RUN Rscript -e "BiocManager::install('VariantAnnotation')"

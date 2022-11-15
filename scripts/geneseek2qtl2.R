@@ -147,7 +147,7 @@ for(chrom in c(1:19,"X","Y","M")) {
       dplyr::select(marker)
     g <- full_geno[rownames(full_geno) %in% mar$marker,]
     qtl2convert::write2csv(cbind(marker=rownames(g), g),
-                           paste0(ostem, "_geno", chr, ".csv"),
-                           paste0(ostem, " genotypes for chr ", chr),
+                           paste0(ostem, "_geno", chrom, ".csv"),
+                           paste0(ostem, " genotypes for chr ", chrom),
                            overwrite=TRUE)
 }

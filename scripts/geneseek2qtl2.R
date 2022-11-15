@@ -12,6 +12,8 @@ library(data.table)
 library(qtl2convert)
 library(vroom)
 library(parallel)
+library(dplyr)
+library(magrittr)
 
 # file containing allele codes for GigaMUGA data
 #   - from GM_processed_files.zip, https://doi.org/10.6084/m9.figshare.5404759
@@ -51,22 +53,26 @@ for(ifile in ifiles) {
     # g <- data.table::fread(ifile, skip = 9)
     g <- vroom::vroom(file = ifile, skip = 9, 
                       num_threads = parallel::detectCores())
+    g %<>%
+        dplyr::filter(`SNP Name` %in% codes$marker)
+    
     # subset to the markers in the codes object
-    g <- g[g[,"SNP Name"] %in% codes[,"marker"],]
+    # g <- g[g[,"SNP Name"] %in% codes[,"marker"],]
 
     # NOTE: may need to revise the IDs in the 2nd column
-    samples <- unique(g[,"Sample ID"])
+    samples <- unique(g$`Sample ID`)
 
     # matrix to contain the genotypes
     geno <- matrix(nrow=nrow(codes), ncol=length(samples))
-    dimnames(geno) <- list(codes[,"marker"], samples)
+    dimnames(geno) <- list(codes$marker, samples)
 
     # fill in matrix
     cat(" -Reorganizing data\n")
     for(i in seq(along=samples)) {
         if(i==round(i,-1)) cat(" --Sample", i, "of", length(samples), "\n")
-        wh <- (g[,"Sample ID"]==samples[i])
-        geno[g[wh,"SNP Name"],i] <- paste0(g[wh,"Allele1 - Forward"], g[wh,"Allele2 - Forward"])
+        wh <- (g$`Sample ID`==samples[i])
+        geno[g[wh,]$`SNP Name`,i] <- paste0(g[wh,]$`Allele1 - Forward`, 
+                                            g[wh,]$`Allele2 - Forward`)
     }
 
     cat(" -Encode genotypes\n")
@@ -81,21 +87,30 @@ for(ifile in ifiles) {
 
     # grab X and Y intensities
     cat(" -Grab X and Y intensities\n")
-    gX <- g[g[,"SNP Name"] %in% codes[codes$chr=="X","marker"],]
-    gY <- g[g[,"SNP Name"] %in% codes[codes$chr=="Y","marker"],]
+    # gX <- g[g[,"SNP Name"] %in% codes[codes$chr=="X","marker"],]
+    gX <- g %>%
+        dplyr::filter(`SNP Name` %in% codes[which(codes$chr == "X"),]$marker)
+    # gY <- g[g[,"SNP Name"] %in% codes[codes$chr=="Y","marker"],]
+    gY <- g %>%
+        dplyr::filter(`SNP Name` %in% codes[which(codes$chr == "Y"),]$marker)
+    
+    #### SAFE STOPPING POINT
     cX <- matrix(nrow=sum(codes$chr=="X"),
                  ncol=length(samples))
-    dimnames(cX) <- list(codes[codes$chr=="X","marker"], samples)
+    dimnames(cX) <- list(codes[which(codes$chr == "X"),]$marker, samples)
     cY <- matrix(nrow=sum(codes$chr=="Y"),
                  ncol=length(samples))
-    dimnames(cY) <- list(codes[codes$chr=="Y","marker"], samples)
+    dimnames(cY) <- list(codes[which(codes$chr == "Y"),]$marker, samples)
+    
     for(i in seq(along=samples)) {
         if(i==round(i,-1)) cat(" --Sample", i, "of", length(samples), "\n")
         wh <- (gX[,"Sample ID"]==samples[i])
-        cX[gX[wh,"SNP Name"],i] <- (gX$X[wh] + gX$Y[wh])/2
-
+        cX[gX[wh,]$`SNP Name`,i] <- (gX$X[wh] + gX$Y[wh])/2
+        # cX[gX[wh,"SNP Name"],i] <- (gX$X[wh] + gX$Y[wh])/2
+        
         wh <- (gY[,"Sample ID"]==samples[i])
-        cY[gY[wh,"SNP Name"],i] <- (gY$X[wh] + gY$Y[wh])/2
+        cY[gY[wh,]$`SNP Name`,i] <- (gY$X[wh] + gY$Y[wh])/2
+        # cY[gY[wh,"SNP Name"],i] <- (gY$X[wh] + gY$Y[wh])/2
     }
     if(is.null(cXint)) {
         cXint <- cX
@@ -122,7 +137,7 @@ qtl2convert::write2csv(cbind(marker=rownames(cYint), cYint),
                        paste0(ostem, "_chrYint.csv"),
                        paste(ostem, "Y chr intensities"),
                        overwrite=TRUE)
-beepr::beep("coin")
+
 # write data to chromosome-specific files
 cat(" -Writing genotypes\n")
 for(chr in c(1:19,"X","Y","M")) {

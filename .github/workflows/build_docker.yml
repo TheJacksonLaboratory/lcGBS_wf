@@ -4,10 +4,12 @@ on:
   push:
     paths:
     - 'env/DO4WC_HR.Dockerfile'
+    - 'env/DO_4WC.yml'
     - '.github/workflows/build_docker.yml'
   pull_request:
     paths:
     - 'env/DO4WC_HR.Dockerfile'
+    - 'env/DO_4WC.yml'
     - '.github/workflows/build_docker.yml'
 
 jobs:

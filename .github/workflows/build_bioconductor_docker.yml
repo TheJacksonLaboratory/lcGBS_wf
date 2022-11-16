@@ -26,5 +26,4 @@ jobs:
         snapshot: true
         dockerfile: lcGBS_bioconductor.Dockerfile
         workdir: "env"
-        tags: "latest"
-        cache: true
+        tags: "variantannotation"

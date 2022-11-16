@@ -26,5 +26,4 @@ jobs:
         snapshot: true
         dockerfile: lcGBS_HR.Dockerfile
         workdir: "env"
-        tags: "latest"
-        cache: true
+        tags: "qtl2_et_al"

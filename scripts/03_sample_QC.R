@@ -154,3 +154,8 @@ cg <- compare_geno(DO_cross, cores=0)
 summary(cg)
 cg <- compare_geno(X4WC_cross, cores=0)
 summary(cg)
+
+save(DO_cross, file = "data/DO_cross.RData")
+save(X4WC_cross, file = "data/4WC_cross.RData")
+
+

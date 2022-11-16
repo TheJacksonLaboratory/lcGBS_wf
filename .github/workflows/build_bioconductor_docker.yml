@@ -1,4 +1,4 @@
-name: Build main container (env/DO4WC_HR.Dockerfile)
+name: Build VariantAnnotation container (env/lcGBS_bioconductor.Dockerfile)
 
 on:
   push:

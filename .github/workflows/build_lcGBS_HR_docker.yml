@@ -1,4 +1,4 @@
-name: Build main container (env/DO4WC_HR.Dockerfile)
+name: Build main container (env/lcGBS_HR.Dockerfile)
 
 on:
   push:

@@ -28,7 +28,7 @@ ifiles <- "data/neogen/Daniel_Gatti_MURGIGV01_20221006_FinalReport.txt"
 
 # file "stem" for output files
 # output files will be like "gm4qtl2_geno19.csv"
-ostem <- "data/DO_4WC"
+ostem <- "data/all_genos/DO_4WC"
 
 # version of data.table::fread() where data.table=FALSE is the default
 myfread <- function(filename, data.table=FALSE, ...) data.table::fread(filename, data.table=data.table, ...)

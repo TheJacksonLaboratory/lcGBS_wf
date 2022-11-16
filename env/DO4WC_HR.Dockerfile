@@ -1,8 +1,5 @@
-# Docker inheritance for bioconductor
-LABEL Sam Widmayer <sjwidmay@gmail.com>
-
-# Installing other R packages
 FROM rocker/r-ver:4.2
+LABEL Sam Widmayer <sjwidmay@gmail.com>
 RUN R -e "install.packages('parallel', repos='http://cran.us.r-project.org')"
 RUN R -e "install.packages('data.table', repos='http://cran.us.r-project.org')"
 RUN R -e "install.packages('vroom', repos='http://cran.us.r-project.org')"

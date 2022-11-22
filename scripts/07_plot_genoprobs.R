@@ -1,3 +1,4 @@
+#!/usr/bin/env Rscript
 library(qtl2)
 library(dplyr)
 library(tidyr)

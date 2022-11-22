@@ -2,6 +2,8 @@
 library(qtl2)
 library(dplyr)
 library(ggplot2)
+library(qtlcharts)
+library(broman)
 DO_cross <- qtl2::read_cross2("data/DOforqtl2.json")
 DO_cross <- qtl2::drop_nullmarkers(DO_cross)
 
@@ -158,4 +160,103 @@ summary(cg)
 save(DO_cross, file = "data/DO_cross.RData")
 save(X4WC_cross, file = "data/4WC_cross.RData")
 
+
+
+
+## Genotype Frequencies
+## DO_cross
+g <- do.call("cbind", DO_cross$geno[1:19])
+fg <- do.call("cbind", DO_cross$founder_geno[1:19])
+g <- g[,colSums(fg==0)==0]
+fg <- fg[,colSums(fg==0)==0]
+fgn <- colSums(fg==3)
+gf_ind <- vector("list", 4)
+for(i in 1:4) {
+  gf_ind[[i]] <- t(apply(g[,fgn==i], 1, function(a) table(factor(a, 1:3))/sum(a != 0)))
+}
+
+png(file=paste0("plots/DOcross_genotype_frequencies.png"))
+par(mfrow=c(2,2), mar=c(0.6, 0.6, 2.6, 0.6))
+for(i in 1:4) {
+  triplot(c("AA", "AB", "BB"), main=paste0("MAF = ", i, "/8"))
+  tripoints(gf_ind[[i]], pch=21, bg="lightblue")
+  tripoints(c((1-i/8)^2, 2*i/8*(1-i/8), (i/8)^2), pch=21, bg="violetred")
+  
+  if(i>=3) { # label mouse with lowest het
+    wh <- which(gf_ind[[i]][,2] == min(gf_ind[[i]][,2]))
+    tritext(gf_ind[[i]][wh,,drop=FALSE] + c(0.02, -0.02, 0),
+            names(wh), adj=c(0, 1))
+  }
+  
+  # label other mice
+  if(i==1) {
+    lab <- rownames(gf_ind[[i]])[gf_ind[[i]][,2]>0.3]
+  }
+  else if(i==2) {
+    lab <- rownames(gf_ind[[i]])[gf_ind[[i]][,2]>0.48]
+  }
+  else if(i==3) {
+    lab <- rownames(gf_ind[[i]])[gf_ind[[i]][,2]>0.51]
+  }
+  else if(i==4) {
+    lab <- rownames(gf_ind[[i]])[gf_ind[[i]][,2]>0.6]
+  }
+  
+  for(ind in lab) {
+    if(grepl("^F", ind) && i != 3) {
+      tritext(gf_ind[[i]][ind,,drop=FALSE] + c(-0.01, 0, +0.01), ind, adj=c(1,0.5))
+    } else {
+      tritext(gf_ind[[i]][ind,,drop=FALSE] + c(0.01, 0, -0.01), ind, adj=c(0,0.5))
+    }
+  }
+}
+dev.off()
+
+## 4WC ## NOT GENERALIZABLE TO THINGS OTHER THAN DO (probably because different MAF distribution)
+g <- do.call("cbind", X4WC_cross$geno[1:19])
+fg <- do.call("cbind", X4WC_cross$founder_geno[1:19])
+g <- g[,colSums(fg==0)==0]
+fg <- fg[,colSums(fg==0)==0]
+fgn <- colSums(fg==3)
+gf_ind <- vector("list", 4)
+for(i in 1:4) {
+  gf_ind[[i]] <- t(apply(g[,fgn==i], 1, function(a) table(factor(a, 1:3))/sum(a != 0)))
+}
+
+png(file=paste0("plots/4WC_genotype_frequencies.png"))
+par(mfrow=c(2,2), mar=c(0.6, 0.6, 2.6, 0.6))
+for(i in 1:4) {
+  triplot(c("AA", "AB", "BB"), main=paste0("MAF = ", i, "/8"))
+  tripoints(gf_ind[[i]], pch=21, bg="lightblue")
+  tripoints(c((1-i/8)^2, 2*i/8*(1-i/8), (i/8)^2), pch=21, bg="violetred")
+  
+  if(i>=3) { # label mouse with lowest het
+    wh <- which(gf_ind[[i]][,2] == min(gf_ind[[i]][,2]))
+    tritext(gf_ind[[i]][wh,,drop=FALSE] + c(0.02, -0.02, 0),
+            names(wh), adj=c(0, 1))
+  }
+  
+  # label other mice
+  if(i==1) {
+    lab <- rownames(gf_ind[[i]])[gf_ind[[i]][,2]>0.3]
+  }
+  else if(i==2) {
+    lab <- rownames(gf_ind[[i]])[gf_ind[[i]][,2]>0.48]
+  }
+  else if(i==3) {
+    lab <- rownames(gf_ind[[i]])[gf_ind[[i]][,2]>0.51]
+  }
+  else if(i==4) {
+    lab <- rownames(gf_ind[[i]])[gf_ind[[i]][,2]>0.6]
+  }
+  
+  for(ind in lab) {
+    if(grepl("^F", ind) && i != 3) {
+      tritext(gf_ind[[i]][ind,,drop=FALSE] + c(-0.01, 0, +0.01), ind, adj=c(1,0.5))
+    } else {
+      tritext(gf_ind[[i]][ind,,drop=FALSE] + c(0.01, 0, -0.01), ind, adj=c(0,0.5))
+    }
+  }
+}
+dev.off()
 

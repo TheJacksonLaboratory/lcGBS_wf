@@ -14,6 +14,7 @@ library(vroom)
 library(parallel)
 library(dplyr)
 library(magrittr)
+library(fst)
 
 # file containing allele codes for GigaMUGA data
 #   - from GM_processed_files.zip, https://doi.org/10.6084/m9.figshare.5404759
@@ -24,7 +25,7 @@ codefile <- "data/GM/GM_allelecodes.csv"
 #  - if samples appear in multiple files, the genotypes in later files
 #    will be used in place of genotypes in earlier files
 #  - files can be gzipped (".gz" extension)
-ifiles <- "data/neogen/Daniel_Gatti_MURGIGV01_20221006_FinalReport.txt"
+ifiles <- "data/neogen/Daniel_Gatti_MURGIGV01_20221006_FinalReport.zip"
 
 # file "stem" for output files
 # output files will be like "gm4qtl2_geno19.csv"
@@ -151,3 +152,49 @@ for(chrom in c(1:19,"X","Y","M")) {
                            paste0(ostem, " genotypes for chr ", chrom),
                            overwrite=TRUE)
 }
+
+# Write all intensities
+# unzip and read the data
+dat <- vector("list", length(ifiles))
+for(i in seq_along(ifiles)) {
+  # zipfile <- tempfile()
+  # download.file(ifiles[i], zipfile)
+  unzipped <- unzip(ifiles)
+  dat[[i]] <- vroom::vroom(file = unzipped, skip = 9,
+               num_threads = parallel::detectCores())
+  # unlink(zipfile)
+}
+
+# rbind the results together, saving selected columns
+dat <- do.call("rbind", dat)[,c("SNP Name", "Sample ID", "X", "Y")]
+
+# create matrices that are snps x samples
+snps <- unique(dat[,"SNP Name"])
+samples <- unique(dat[,"Sample ID"])
+X <- Y <- matrix(ncol=length(samples), nrow=length(snps))
+dimnames(X) <- dimnames(Y) <- list(snps, samples)
+for(i in seq(along=samples)) {
+  message(i, " of ", length(samples))
+  tmp <- dat[dat[,"Sample ID"]==samples[i],]
+  X[,samples[i]] <- tmp[,"X"]
+  Y[,samples[i]] <- tmp[,"Y"]
+}
+
+# bring together in one matrix
+result <- cbind(snp=rep(snps, 2),
+                channel=rep(c("X", "Y"), each=length(snps)),
+                as.data.frame(rbind(X, Y)))
+rownames(result) <- 1:nrow(result)
+
+# bring SNP rows together
+result <- result[as.numeric(t(cbind(seq_along(snps), seq_along(snps)+length(snps)))),]
+rownames(result) <- 1:nrow(result)
+
+# write to fst file, maximally compressed
+write.fst(result, "data/intensities.fst", compress=100)
+
+
+
+
+
+

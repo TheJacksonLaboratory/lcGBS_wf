@@ -5,7 +5,7 @@
   "na.strings": ["-", "NA"],
   "comment.char": "#",
   "geno": ["4WC_genos/4WC_geno1.csv", "4WC_genos/4WC_geno2.csv", "4WC_genos/4WC_geno3.csv", "4WC_genos/4WC_geno4.csv", "4WC_genos/4WC_geno5.csv", "4WC_genos/4WC_geno6.csv", "4WC_genos/4WC_geno7.csv", "4WC_genos/4WC_geno8.csv", "4WC_genos/4WC_geno9.csv", "4WC_genos/4WC_geno10.csv", "4WC_genos/4WC_geno11.csv", "4WC_genos/4WC_geno12.csv", "4WC_genos/4WC_geno13.csv", "4WC_genos/4WC_geno14.csv", "4WC_genos/4WC_geno15.csv", "4WC_genos/4WC_geno16.csv", "4WC_genos/4WC_geno17.csv", "4WC_genos/4WC_geno18.csv", "4WC_genos/4WC_geno19.csv", "4WC_genos/4WC_genoX.csv"],
-  "founder_geno": ["GM/GM_foundergeno1.csv", "GM/GM_foundergeno2.csv", "GM/GM_foundergeno3.csv", "GM/GM_foundergeno4.csv", "GM/GM_foundergeno5.csv", "GM/GM_foundergeno6.csv", "GM/GM_foundergeno7.csv", "GM/GM_foundergeno8.csv", "GM/GM_foundergeno9.csv", "GM/GM_foundergeno10.csv", "GM/GM_foundergeno11.csv", "GM/GM_foundergeno12.csv", "GM/GM_foundergeno13.csv", "GM/GM_foundergeno14.csv", "GM/GM_foundergeno15.csv", "GM/GM_foundergeno16.csv", "GM/GM_foundergeno17.csv", "GM/GM_foundergeno18.csv", "GM/GM_foundergeno19.csv", "GM/GM_foundergenoX.csv"],
+  "founder_geno": ["4WC_founder_genos/4WC_foundergeno1.csv", "4WC_founder_genos/4WC_foundergeno2.csv", "4WC_founder_genos/4WC_foundergeno3.csv", "4WC_founder_genos/4WC_foundergeno4.csv", "4WC_founder_genos/4WC_foundergeno5.csv", "4WC_founder_genos/4WC_foundergeno6.csv", "4WC_founder_genos/4WC_foundergeno7.csv", "4WC_founder_genos/4WC_foundergeno8.csv", "4WC_founder_genos/4WC_foundergeno9.csv", "4WC_founder_genos/4WC_foundergeno10.csv", "4WC_founder_genos/4WC_foundergeno11.csv", "4WC_founder_genos/4WC_foundergeno12.csv", "4WC_founder_genos/4WC_foundergeno13.csv", "4WC_founder_genos/4WC_foundergeno14.csv", "4WC_founder_genos/4WC_foundergeno15.csv", "4WC_founder_genos/4WC_foundergeno16.csv", "4WC_founder_genos/4WC_foundergeno17.csv", "4WC_founder_genos/4WC_foundergeno18.csv", "4WC_founder_genos/4WC_foundergeno19.csv", "4WC_founder_genos/4WC_foundergenoX.csv"],
   "gmap": ["GM/GM_gmap1.csv", "GM/GM_gmap2.csv", "GM/GM_gmap3.csv", "GM/GM_gmap4.csv", "GM/GM_gmap5.csv", "GM/GM_gmap6.csv", "GM/GM_gmap7.csv", "GM/GM_gmap8.csv", "GM/GM_gmap9.csv", "GM/GM_gmap10.csv", "GM/GM_gmap11.csv", "GM/GM_gmap12.csv", "GM/GM_gmap13.csv", "GM/GM_gmap14.csv", "GM/GM_gmap15.csv", "GM/GM_gmap16.csv", "GM/GM_gmap17.csv", "GM/GM_gmap18.csv", "GM/GM_gmap19.csv", "GM/GM_gmapX.csv"],
   "pmap": ["GM/GM_pmap1.csv", "GM/GM_pmap2.csv", "GM/GM_pmap3.csv", "GM/GM_pmap4.csv", "GM/GM_pmap5.csv", "GM/GM_pmap6.csv", "GM/GM_pmap7.csv", "GM/GM_pmap8.csv", "GM/GM_pmap9.csv", "GM/GM_pmap10.csv", "GM/GM_pmap11.csv", "GM/GM_pmap12.csv", "GM/GM_pmap13.csv", "GM/GM_pmap14.csv", "GM/GM_pmap15.csv", "GM/GM_pmap16.csv", "GM/GM_pmap17.csv", "GM/GM_pmap18.csv", "GM/GM_pmap19.csv", "GM/GM_pmapX.csv"],
   "covar": "4WC_covar.csv",
@@ -23,6 +23,6 @@
     "M": "Male"
   },
   "cross_info": {
-    "covar": "Generation"
+    "covar": ["Generation", "F", "J", "K", "L"]
   }
 }

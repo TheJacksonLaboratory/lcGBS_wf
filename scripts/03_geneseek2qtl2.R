@@ -171,27 +171,27 @@ dat <- do.call("rbind", dat)[,c("SNP Name", "Sample ID", "X", "Y")]
 # create matrices that are snps x samples
 snps <- unique(dat[,"SNP Name"])
 samples <- unique(dat[,"Sample ID"])
-X <- Y <- matrix(ncol=length(samples), nrow=length(snps))
-dimnames(X) <- dimnames(Y) <- list(snps, samples)
-for(i in seq(along=samples)) {
-  message(i, " of ", length(samples))
-  tmp <- dat[dat[,"Sample ID"]==samples[i],]
-  X[,samples[i]] <- tmp[,"X"]
-  Y[,samples[i]] <- tmp[,"Y"]
+X <- Y <- matrix(ncol=length(samples$`Sample ID`), nrow=length(snps$`SNP Name`))
+dimnames(X) <- dimnames(Y) <- list(snps$`SNP Name`, samples$`Sample ID`)
+for(i in seq(along=samples$`Sample ID`)) {
+  message(i, " of ", length(samples$`Sample ID`))
+  tmp <- dat[dat[,"Sample ID"]==samples$`Sample ID`[i],]
+  X[,samples$`Sample ID`[i]] <- tmp[,"X"]$X
+  Y[,samples$`Sample ID`[i]] <- tmp[,"Y"]$Y
 }
 
 # bring together in one matrix
-result <- cbind(snp=rep(snps, 2),
-                channel=rep(c("X", "Y"), each=length(snps)),
+result <- cbind(snp=rep(snps$`SNP Name`, 2),
+                channel=rep(c("X", "Y"), each=length(snps$`SNP Name`)),
                 as.data.frame(rbind(X, Y)))
 rownames(result) <- 1:nrow(result)
 
 # bring SNP rows together
-result <- result[as.numeric(t(cbind(seq_along(snps), seq_along(snps)+length(snps)))),]
+result <- result[as.numeric(t(cbind(seq_along(snps$`SNP Name`), seq_along(snps$`SNP Name`)+length(snps$`SNP Name`)))),]
 rownames(result) <- 1:nrow(result)
 
 # write to fst file, maximally compressed
-write.fst(result, "data/intensities.fst", compress=100)
+write.fst(result, "data/DO4WC_intensities.fst", compress=100)
 
 
 

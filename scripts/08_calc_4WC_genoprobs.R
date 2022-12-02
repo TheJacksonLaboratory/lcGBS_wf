@@ -7,17 +7,114 @@ library(ggbeeswarm)
 library(future)
 library(furrr)
 
-pullCrossovers <- function(chrs, ind){
+gm_meta_build38 <- read.csv("data/gm_uwisc_v1.csv")
+gm_meta_build39 <- read.csv("data/gm_uwisc_v2.csv")
+
+#####
+# Load in DO cross data
+#####
+load("data/4WC_cross.RData")
+
+#####
+# Insert pseudomarkers
+#####
+map <- qtl2::insert_pseudomarkers(X4WC_cross$gmap, step = 1)
+save(map, file = "data/4WC_map.RData")
+
+#####
+# Calculate genotype probabilities
+#####
+pr <- calc_genoprob(X4WC_cross, map, error_prob=0.002, cores = parallel::detectCores())
+
+#####
+# Convert geno probs to allele probs
+#####
+save(pr, file = "data/4WC_genoprobs.RData")
+
+#####
+# Find best marginal genotype probability
+#####
+m_char <- qtl2::maxmarg(probs = pr,
+                        cores = parallel::detectCores(),
+                        return_char = T,
+                        minprob = 0.5)
+save(m_char, file = "data/4WC_maxmarg.RData")
+m <- qtl2::maxmarg(probs = pr, 
+                   cores = parallel::detectCores(), 
+                   minprob = 0.5)
+save(m, file = "data/4WC_maxmarg_numeric.RData")
+
+# A = CAST
+# B = POHN
+# C = GOR
+# D = PWD
+
+#####
+# Count crossovers
+#####
+percent_missing <- n_missing(X4WC_cross, "ind", "prop")*100
+nxo <- qtl2::count_xo(m, cores=parallel::detectCores())
+nxo_df <- data.frame(nxo) %>%
+  `colnames<-`(colnames(nxo)) %>%
+  dplyr::mutate(sample = rownames(nxo)) %>%
+  dplyr::left_join(., X4WC_cross$covar %>%
+                     dplyr::mutate(sample = rownames(X4WC_cross$covar)))
+long_nxo_df <- nxo_df %>%
+  tidyr::pivot_longer(c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,X),
+                      names_to = "chromosome", values_to = "nxos") %>%
+  dplyr::mutate(chromosome = as.factor(chromosome))
+long_nxo_df$chromosome <- factor(long_nxo_df$chromosome, levels = c(paste(seq(1:19)),"X"))
+
+#####
+# Locate crossovers
+#####
+xolocs <- qtl2::locate_xo(geno = m, 
+                          map = map,
+                          cores=parallel::detectCores())
+# xolocs_tr <- purrr::transpose(xolocs)
+# inds <- names(xolocs_tr)
+xolocs_chr <- names(xolocs)
+future::plan(multisession, workers = 16)
+make_chunks <- furrr:::make_chunks
+make_chunks(n_x = length(xolocs_chr), n_workers = 16)
+pullCrossovers <- function(xo_locations, xo_chrs){
   ind_crossovers <- list()
-  for(i in names(chrs)){
-    chr_xos <- data.frame(chrs[[i]], rep(names(chrs[i]), length(chrs[[i]])))
-    colnames(chr_xos) <- c("cM", "chr")
-    ind_crossovers[[i]] <- chr_xos
+  for(i in names(xo_locations)){
+    if(length(xo_locations[[i]]) == 0){
+      next
+      ind_crossovers[[i]]
+    } else {
+      chr_xos <- data.frame(names(xo_locations[i]), data.frame(xo_locations[[i]])) %>%
+        `colnames<-`(c("sample","cM")) %>%
+        dplyr::mutate(chr = xo_chrs)
+      ind_crossovers[[i]] <- chr_xos
+    }
   }
   Reduce(rbind, ind_crossovers) %>%
-    dplyr::mutate(sample = ind) %>%
     dplyr::select(sample, chr, cM)
 }
+# pullCrossovers(xo_locations = xolocs[[3]],
+#                xo_chrs = xolocs_chr[[3]])
+xolocs_df <- furrr::future_map2(.x = xolocs, 
+                                .y = xolocs_chr,
+                                .f = pullCrossovers,
+                                .options = furrr_options(seed = TRUE)) %>% 
+  Reduce(dplyr::bind_rows,.)
+
+xolocs_df_nest <- xolocs_df %>%
+  dplyr::ungroup() %>%
+  dplyr::group_by(chr) %>%
+  tidyr::nest()
+
+
+#####
+# Identify diplotypes on both sides of crossover
+#####
+future::plan(multisession, workers = 16)
+make_chunks <- furrr:::make_chunks
+make_chunks(n_x = length(xolocs_df_nest$data), n_workers = 16)
+# pullXoDiplotypes(xo_chrs = xolocs_df_nest$chr[[4]], 
+#                  xo_dat = xolocs_df_nest$data[[4]])
 pullXoDiplotypes <- function(xo_chrs, xo_dat){
   samples <- unique(xo_dat$sample)
   sample_xo_diplotype_list <- list()
@@ -30,7 +127,7 @@ pullXoDiplotypes <- function(xo_chrs, xo_dat){
     for(cM in unique(samp$cM)){
       # print(paste(cM,"cM"))
       print(which(unique(samp$cM) == cM))
-      cMsearch <- data.frame(X4WC_cross$gmap[[1]]) %>%
+      cMsearch <- data.frame(X4WC_cross$gmap[[xo_chrs]]) %>%
         dplyr::mutate(marker = rownames(.)) %>%
         `colnames<-`(c("cM","marker"))
       rownames(cMsearch) <- NULL
@@ -48,9 +145,9 @@ pullXoDiplotypes <- function(xo_chrs, xo_dat){
       marker <- cMsearch_df[!is.na(cMsearch_df$cM),]$marker
       
       options(scipen = 99999)
-      dips <- matrix(nrow = length(unique(search_pos)), ncol = 3)
+      dips <- matrix(nrow = length(unique(search_pos)), ncol = 4)
       for(p in unique(search_pos)){
-        interval_genoprobs <- qtl2::pull_genoprobpos(genoprobs = clean_probs, 
+        interval_genoprobs <- qtl2::pull_genoprobpos(genoprobs = pr, 
                                                      map = X4WC_cross$gmap,
                                                      chr = xo_chrs,
                                                      pos = p)
@@ -63,9 +160,10 @@ pullXoDiplotypes <- function(xo_chrs, xo_dat){
         dips[which(unique(search_pos) == p),1] <- diplotype
         dips[which(unique(search_pos) == p),2] <- p
         dips[which(unique(search_pos) == p),3] <- probs
+        dips[which(unique(search_pos) == p),4] <- marker[which(unique(search_pos) == p)]
       }
       dips <- data.frame(dips)
-      colnames(dips) <- c("diplotype","cM","prob")
+      colnames(dips) <- c("diplotype","cM","prob","marker")
       for(i in 2:nrow(dips)){
         if(dips[i-1,]$diplotype == dips[i,]$diplotype){
           next
@@ -82,88 +180,9 @@ pullXoDiplotypes <- function(xo_chrs, xo_dat){
       dplyr::mutate(sample = s) %>%
       dplyr::select(sample, everything())
   }
-  return(Reduce(dplyr::bind_rows, sample_xo_diplotype_list))
+  return(Reduce(dplyr::bind_rows, sample_xo_diplotype_list) %>%
+           dplyr::mutate(chr = xo_chrs))
 }
-
-# Load in DO cross data
-load("data/4WC_cross.RData")
-
-# Insert pseudomarkers
-map <- qtl2::insert_pseudomarkers(X4WC_cross$gmap, step = 1)
-
-# Calculate genotype probabilities
-pr <- calc_genoprob(X4WC_cross, map, error_prob=0.002, cores = parallel::detectCores())
-
-# Convert geno probs to allele probs
-save(pr, file = "data/4WC_genoprobs.RData")
-
-# Insert pseudomarkers in genetic map
-map <- insert_pseudomarkers(X4WC_cross$gmap, step=1)
-
-# Find best marginal genotype probability
-m_char <- qtl2::maxmarg(probs = pr,
-                        cores = parallel::detectCores(),
-                        return_char = T,
-                        minprob = 0.5)
-save(m_char, file = "data/4WC_maxmarg.RData")
-m <- qtl2::maxmarg(probs = pr, 
-                   cores = parallel::detectCores(), 
-                   minprob = 0.5)
-save(m, file = "data/4WC_maxmarg_numeric.RData")
-
-
-# Count crossovers
-percent_missing <- n_missing(X4WC_cross, "ind", "prop")*100
-nxo <- qtl2::count_xo(m, cores=parallel::detectCores())
-nxo_df <- data.frame(nxo) %>%
-  `colnames<-`(colnames(nxo)) %>%
-  dplyr::mutate(sample = rownames(nxo)) %>%
-  dplyr::left_join(., X4WC_cross$covar %>%
-                     dplyr::mutate(sample = rownames(X4WC_cross$covar)))
-long_nxo_df <- nxo_df %>%
-  tidyr::pivot_longer(c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,X),
-                      names_to = "chromosome", values_to = "nxos") %>%
-  dplyr::mutate(chromosome = as.factor(chromosome))
-long_nxo_df$chromosome <- factor(long_nxo_df$chromosome, levels = c(paste(seq(1:19)),"X"))
-
-# Plot the number of crossovers
-nxo_ggplot <- ggplot(long_nxo_df, mapping = aes(x = chromosome, 
-                                                y = nxos, 
-                                                fill = Sex)) + 
-  theme_bw() + 
-  geom_point(shape = 21, alpha = 0.7, 
-             position = position_quasirandom(groupOnX = F)) +
-  theme(panel.grid = element_blank()) + 
-  scale_y_continuous(breaks = seq(from = as.numeric(min(long_nxo_df$nxos)), 
-                                  to = as.numeric(max(long_nxo_df$nxos)), 
-                                  by = 1)) + 
-  labs(x = "Chromosome",
-       y = "Number of Crossovers")
-ggsave(nxo_ggplot, filename = "plots/4WC_nxos.png",
-       height = 7, width = 7)
-
-# Locate crossovers
-xolocs <- qtl2::locate_xo(geno = m, 
-                          map = map,
-                          cores=parallel::detectCores())
-xolocs_tr <- purrr::transpose(xolocs)
-inds <- names(xolocs_tr)
-future::plan(multisession, workers = 16)
-make_chunks <- furrr:::make_chunks
-make_chunks(n_x = length(xolocs_tr), n_workers = 16)
-xolocs_df <- furrr::future_map2(.x = xolocs_tr, 
-                                .y = inds,
-                                .f = pullCrossovers,
-                                .options = furrr_options(seed = TRUE)) %>% Reduce(rbind,.)
-xolocs_df_nest <- xolocs_df %>%
-  dplyr::group_by(chr) %>%
-  tidyr::nest()
-clean_probs <- qtl2::clean_genoprob(pr)
-future::plan(multisession, workers = 16)
-make_chunks <- furrr:::make_chunks
-make_chunks(n_x = length(xolocs_df_nest$data), n_workers = 16)
-
-# Identify diplotypes on both sides of crossover
 xodiplotypes <- furrr::future_map2(.x = xolocs_df_nest$chr, 
                                    .y = xolocs_df_nest$data,
                                    .f = pullXoDiplotypes,
@@ -172,45 +191,62 @@ xodiplotypes <- furrr::future_map2(.x = xolocs_df_nest$chr,
 all_xo_diplotypes <- list()
 for(i in 1:length(xodiplotypes)){
   all_xo_diplotypes[[i]] <- xodiplotypes[[i]] %>%
-    dplyr::filter(!is.na(loc)) %>%
-    dplyr::mutate(chr = i)
+    dplyr::filter(!is.na(loc))
 }
 xos_sample_nested <- Reduce(rbind,all_xo_diplotypes) %>%
   dplyr::group_by(sample) %>%
   tidyr::nest()
 
+#####
 # Write crossover summary table
+#####
 auto_xo_count_df <- purrr::map2_dfr(.x = xos_sample_nested$sample, 
-                .y = xos_sample_nested$data, 
-                .f = function(smp, data){
-                  data %>%
-                    dplyr::filter(loc == "proximal",
-                                  chr != "20") %>%
-                    dplyr::distinct() %>%
-                    dplyr::count() %>%
-                    dplyr::rename(auto_xos = n) %>% 
-                    dplyr::mutate(sample = smp) %>%
-                    dplyr::select(sample, auto_xos)}) %>%
+                                    .y = xos_sample_nested$data, 
+                                    .f = function(smp, data){
+                                      data %>%
+                                        dplyr::filter(loc == "proximal",
+                                                      chr != "20") %>%
+                                        dplyr::distinct() %>%
+                                        dplyr::count() %>%
+                                        dplyr::rename(auto_xos = n) %>% 
+                                        dplyr::mutate(sample = smp) %>%
+                                        dplyr::select(sample, auto_xos)}) %>%
   dplyr::arrange(sample)
 write.csv(auto_xo_count_df, file = "data/4WC_autosomal_crossovers.csv", row.names = F, quote = F)
 
+#####
+# Plot the number of crossovers
+#####
+nxo_ggplot <- X4WC_cross$covar %>%
+  dplyr::mutate(sample = rownames(.)) %>%
+  dplyr::left_join(.,auto_xo_count_df) %>%
+  dplyr::select(sample, auto_xos, Generation) %>%
+  ggplot(., mapping = aes(x = reorder(sample, auto_xos), y = auto_xos, colour = Generation)) +
+  theme_bw() + 
+  geom_point() + 
+  theme(panel.grid = element_blank(),
+        axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) +
+  labs(x = "Sample",
+       y = "Number of Autosomal Crossovers")
+ggsave(nxo_ggplot, filename = "plots/4WC_nxos.png",
+       height = 7, width = 7)
+
+
+#####
 # Write individual sample crossover diplotypes
+#####
 dir.create(path = "data/4WC_crossover_diplotypes/", showWarnings = F)
-purrr::map2(.x = xos_sample_nested$sample,
-            .y = xos_sample_nested$data,
-            .f = function(smp, data){
-              outfile <- data %>% 
-                dplyr::mutate(sample = smp) %>%
-                dplyr::select(sample, chr, cM, everything()) %>%
-                dplyr::distinct()
-              write.csv(outfile, 
-                        file = paste0("data/4WC_crossover_diplotypes/",smp,"_crossover_diplotypes.csv"), 
+purrr::map2(.x = xos_sample_nested$data, 
+            .y = xos_sample_nested$sample, 
+            .f = function(x,y){
+              outfile <- x %>%
+                dplyr::mutate(sample = y) %>%
+                dplyr::left_join(., gm_meta_build39, 
+                                 by = c("chr", "marker")) %>% 
+                dplyr::distinct(sample, chr, cM, marker, loc, prob, bp_mm10, bp_grcm39) %>%
+                dplyr::arrange(chr)
+              write.csv(outfile,
+                        file = paste0("data/4WC_crossover_diplotypes/",y,"_crossover_diplotypes.csv"), 
                         row.names = F, quote = F)
-            })
-
-
-
-
-
-
+})
 

@@ -6,30 +6,36 @@ library(parallel)
 library(ggbeeswarm)
 library(future)
 library(furrr)
+library(qtl2fst)
 
 gm_meta_build38 <- read.csv("data/gm_uwisc_v1.csv")
 gm_meta_build39 <- read.csv("data/gm_uwisc_v2.csv")
 
 #####
-# Load in DO cross data
+# Load in CC cross data
 #####
-load("data/DO_cross.RData")
+load("data/CC_cross.RData")
 
 #####
 # Insert pseudomarkers
 #####
-map <- qtl2::insert_pseudomarkers(DO_cross$gmap, step = 1)
-save(map, file = "data/DO_map.RData")
+map <- qtl2::insert_pseudomarkers(CC_cross$gmap, step = 1)
+save(map, file = "data/CC_map.RData")
 
 #####
 # Calculate genotype probabilities
 #####
-pr <- calc_genoprob(DO_cross, map, error_prob=0.002, cores = parallel::detectCores())
+pr <- calc_genoprob(CC_cross, map, error_prob=0.002, cores = parallel::detectCores())
+pr_fst <- calc_genoprob_fst(cross = CC_cross, 
+                            map = map, 
+                            error_prob = 0.002, 
+                            cores = parallel::detectCores(), fbase = "data/CC_genoprobs.fst")
+
 
 #####
 # Convert geno probs to allele probs
 #####
-save(pr, file = "data/DO_genoprobs.RData")
+save(pr, file = "data/CC_genoprobs.RData")
 
 #####
 # Find best marginal genotype probability
@@ -38,23 +44,23 @@ m_char <- qtl2::maxmarg(probs = pr,
                         cores = parallel::detectCores(),
                         return_char = T,
                         minprob = 0.5)
-save(m_char, file = "data/DO_maxmarg.RData")
+save(m_char, file = "data/CC_maxmarg.RData")
 m <- qtl2::maxmarg(probs = pr, 
                    cores = parallel::detectCores(), 
                    minprob = 0.5)
-save(m, file = "data/DO_maxmarg_numeric.RData")
+save(m, file = "data/CC_maxmarg_numeric.RData")
 
 
 #####
 # Count crossovers
 #####
-percent_missing <- n_missing(DO_cross, "ind", "prop")*100
+percent_missing <- n_missing(CC_cross, "ind", "prop")*100
 nxo <- qtl2::count_xo(m, cores=parallel::detectCores())
 nxo_df <- data.frame(nxo) %>%
   `colnames<-`(colnames(nxo)) %>%
   dplyr::mutate(sample = rownames(nxo)) %>%
-  dplyr::left_join(., DO_cross$covar %>%
-                     dplyr::mutate(sample = rownames(DO_cross$covar)))
+  dplyr::left_join(., CC_cross$covar %>%
+                     dplyr::mutate(sample = rownames(CC_cross$covar)))
 long_nxo_df <- nxo_df %>%
   tidyr::pivot_longer(c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,X),
                       names_to = "chromosome", values_to = "nxos") %>%
@@ -123,7 +129,7 @@ pullXoDiplotypes <- function(xo_chrs, xo_dat){
     for(cM in unique(samp$cM)){
       # print(paste(cM,"cM"))
       print(which(unique(samp$cM) == cM))
-      cMsearch <- data.frame(DO_cross$gmap[[xo_chrs]]) %>%
+      cMsearch <- data.frame(CC_cross$gmap[[xo_chrs]]) %>%
         dplyr::mutate(marker = rownames(.)) %>%
         `colnames<-`(c("cM","marker"))
       rownames(cMsearch) <- NULL
@@ -144,7 +150,7 @@ pullXoDiplotypes <- function(xo_chrs, xo_dat){
       dips <- matrix(nrow = length(unique(search_pos)), ncol = 4)
       for(p in unique(search_pos)){
         interval_genoprobs <- qtl2::pull_genoprobpos(genoprobs = pr, 
-                                                     map = DO_cross$gmap,
+                                                     map = CC_cross$gmap,
                                                      chr = xo_chrs,
                                                      pos = p)
         samp_genoprobs <- interval_genoprobs[which(rownames(interval_genoprobs) == s),]
@@ -208,12 +214,12 @@ auto_xo_count_df <- purrr::map2_dfr(.x = xos_sample_nested$sample,
                                         dplyr::mutate(sample = smp) %>%
                                         dplyr::select(sample, auto_xos)}) %>%
   dplyr::arrange(sample)
-write.csv(auto_xo_count_df, file = "data/DO_autosomal_crossovers.csv", row.names = F, quote = F)
+write.csv(auto_xo_count_df, file = "data/CC_autosomal_crossovers.csv", row.names = F, quote = F)
 
 #####
 # Plot the number of crossovers
 #####
-nxo_ggplot <- DO_cross$covar %>%
+nxo_ggplot <- CC_cross$covar %>%
   dplyr::mutate(sample = rownames(.)) %>%
   dplyr::left_join(.,auto_xo_count_df) %>%
   dplyr::select(sample, auto_xos, Generation) %>%
@@ -224,14 +230,14 @@ nxo_ggplot <- DO_cross$covar %>%
         axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) +
   labs(x = "Sample",
        y = "Number of Autosomal Crossovers")
-ggsave(nxo_ggplot, filename = "plots/DO_nxos.png",
+ggsave(nxo_ggplot, filename = "plots/CC_nxos.png",
        height = 7, width = 7)
 
 
 #####
 # Write individual sample crossover diplotypes
 #####
-dir.create(path = "data/DO_crossover_diplotypes/", showWarnings = F)
+dir.create(path = "data/CC_crossover_diplotypes/", showWarnings = F)
 purrr::map2(.x = xos_sample_nested$data, 
             .y = xos_sample_nested$sample, 
             .f = function(x,y){
@@ -242,7 +248,7 @@ purrr::map2(.x = xos_sample_nested$data,
                 dplyr::distinct(sample, chr, cM, marker, loc, prob, bp_mm10, bp_grcm39) %>%
                 dplyr::arrange(chr)
               write.csv(outfile,
-                        file = paste0("data/DO_crossover_diplotypes/",y,"_crossover_diplotypes.csv"), 
+                        file = paste0("data/CC_crossover_diplotypes/",y,"_crossover_diplotypes.csv"), 
                         row.names = F, quote = F)
 })
 

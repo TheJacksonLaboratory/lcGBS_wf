@@ -7,78 +7,6 @@ library(ggbeeswarm)
 library(future)
 library(furrr)
 library(qtl2fst)
-
-gm_meta_build38 <- read.csv("data/gm_uwisc_v1.csv")
-gm_meta_build39 <- read.csv("data/gm_uwisc_v2.csv")
-
-#####
-# Load in CC cross data
-#####
-load("data/CC_cross.RData")
-
-#####
-# Insert pseudomarkers
-#####
-map <- qtl2::insert_pseudomarkers(CC_cross$gmap, step = 1)
-save(map, file = "data/CC_map.RData")
-
-#####
-# Calculate genotype probabilities
-#####
-pr <- calc_genoprob(CC_cross, map, error_prob=0.002, cores = parallel::detectCores())
-pr_fst <- calc_genoprob_fst(cross = CC_cross, 
-                            map = map, 
-                            error_prob = 0.002, 
-                            cores = parallel::detectCores(), fbase = "data/CC_genoprobs.fst")
-
-
-#####
-# Convert geno probs to allele probs
-#####
-save(pr, file = "data/CC_genoprobs.RData")
-
-#####
-# Find best marginal genotype probability
-#####
-m_char <- qtl2::maxmarg(probs = pr,
-                        cores = parallel::detectCores(),
-                        return_char = T,
-                        minprob = 0.5)
-save(m_char, file = "data/CC_maxmarg.RData")
-m <- qtl2::maxmarg(probs = pr, 
-                   cores = parallel::detectCores(), 
-                   minprob = 0.5)
-save(m, file = "data/CC_maxmarg_numeric.RData")
-
-
-#####
-# Count crossovers
-#####
-percent_missing <- n_missing(CC_cross, "ind", "prop")*100
-nxo <- qtl2::count_xo(m, cores=parallel::detectCores())
-nxo_df <- data.frame(nxo) %>%
-  `colnames<-`(colnames(nxo)) %>%
-  dplyr::mutate(sample = rownames(nxo)) %>%
-  dplyr::left_join(., CC_cross$covar %>%
-                     dplyr::mutate(sample = rownames(CC_cross$covar)))
-long_nxo_df <- nxo_df %>%
-  tidyr::pivot_longer(c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,X),
-                      names_to = "chromosome", values_to = "nxos") %>%
-  dplyr::mutate(chromosome = as.factor(chromosome))
-long_nxo_df$chromosome <- factor(long_nxo_df$chromosome, levels = c(paste(seq(1:19)),"X"))
-
-#####
-# Locate crossovers
-#####
-xolocs <- qtl2::locate_xo(geno = m, 
-                          map = map,
-                          cores=parallel::detectCores())
-# xolocs_tr <- purrr::transpose(xolocs)
-# inds <- names(xolocs_tr)
-xolocs_chr <- names(xolocs)
-future::plan(multisession, workers = 16)
-make_chunks <- furrr:::make_chunks
-make_chunks(n_x = length(xolocs_chr), n_workers = 16)
 pullCrossovers <- function(xo_locations, xo_chrs){
   ind_crossovers <- list()
   for(i in names(xo_locations)){
@@ -95,29 +23,12 @@ pullCrossovers <- function(xo_locations, xo_chrs){
   Reduce(rbind, ind_crossovers) %>%
     dplyr::select(sample, chr, cM)
 }
-# pullCrossovers(xo_locations = xolocs[[3]],
-#                xo_chrs = xolocs_chr[[3]])
-xolocs_df <- furrr::future_map2(.x = xolocs, 
-                                .y = xolocs_chr,
-                                .f = pullCrossovers,
-                                .options = furrr_options(seed = TRUE)) %>% 
-  Reduce(dplyr::bind_rows,.)
 
-xolocs_df_nest <- xolocs_df %>%
-  dplyr::ungroup() %>%
-  dplyr::group_by(chr) %>%
-  tidyr::nest()
+# pullXoDiplotypes(xo_chrs = xolocs_df_nest$chr[[4]],
+#                  xo_dat = xolocs_df_nest$data[[4]],
+#                  geno_probs = pr[[4]])
 
-
-#####
-# Identify diplotypes on both sides of crossover
-#####
-future::plan(multisession, workers = 16)
-make_chunks <- furrr:::make_chunks
-make_chunks(n_x = length(xolocs_df_nest$data), n_workers = 16)
-# pullXoDiplotypes(xo_chrs = xolocs_df_nest$chr[[4]], 
-#                  xo_dat = xolocs_df_nest$data[[4]])
-pullXoDiplotypes <- function(xo_chrs, xo_dat){
+pullXoDiplotypes <- function(xo_chrs, xo_dat, geno_probs){
   samples <- unique(xo_dat$sample)
   sample_xo_diplotype_list <- list()
   print(xo_chrs)
@@ -149,7 +60,7 @@ pullXoDiplotypes <- function(xo_chrs, xo_dat){
       options(scipen = 99999)
       dips <- matrix(nrow = length(unique(search_pos)), ncol = 4)
       for(p in unique(search_pos)){
-        interval_genoprobs <- qtl2::pull_genoprobpos(genoprobs = pr, 
+        interval_genoprobs <- qtl2::pull_genoprobpos(genoprobs = geno_probs,
                                                      map = CC_cross$gmap,
                                                      chr = xo_chrs,
                                                      pos = p)
@@ -185,6 +96,115 @@ pullXoDiplotypes <- function(xo_chrs, xo_dat){
   return(Reduce(dplyr::bind_rows, sample_xo_diplotype_list) %>%
            dplyr::mutate(chr = xo_chrs))
 }
+
+
+gm_meta_build38 <- read.csv("data/gm_uwisc_v1.csv")
+gm_meta_build39 <- read.csv("data/gm_uwisc_v2.csv")
+
+#####
+# Load in CC cross data
+#####
+load("data/CC_cross.RData")
+
+
+if(!file.exists("data/CC_pr_X.fst")){
+  #####
+  # Insert pseudomarkers
+  #####
+  map <- qtl2::insert_pseudomarkers(CC_cross$gmap, step = 1)
+  save(map, file = "data/CC_map.RData")
+  
+  #####
+  # Calculate genotype probabilities
+  #####
+  # pr <- qtl2::calc_genoprob(CC_cross, map, error_prob=0.002, cores = parallel::detectCores())
+  fpr <- qtl2fst::calc_genoprob_fst(cross = CC_cross, 
+                                    map = map, 
+                                    error_prob = 0.002, 
+                                    cores = parallel::detectCores(), 
+                                    fdir = "data/", 
+                                    fbase = "CC_pr")
+  
+  #####
+  # Convert geno probs to allele probs
+  #####
+  # save(pr, file = "data/CC_genoprobs.RData")
+  
+  #####
+  # Find best marginal genotype probability
+  #####
+  m_char <- qtl2::maxmarg(probs = fpr,
+                          cores = parallel::detectCores(),
+                          return_char = T,
+                          minprob = 0.5)
+  save(m_char, file = "data/CC_maxmarg.RData")
+  m <- qtl2::maxmarg(probs = pr, 
+                     cores = parallel::detectCores(), 
+                     minprob = 0.5)
+  save(m, file = "data/CC_maxmarg_numeric.RData")
+} else {
+  load("data/CC_map.RData")
+  load("data/CC_genoprobs.RData")
+  load("data/CC_maxmarg.RData")
+  load("data/CC_maxmarg_numeric.RData")
+}
+
+
+
+#####
+# Count crossovers
+#####
+
+
+percent_missing <- n_missing(CC_cross, "ind", "prop")*100
+nxo <- qtl2::count_xo(m, cores=parallel::detectCores())
+nxo_df <- data.frame(nxo) %>%
+  `colnames<-`(colnames(nxo)) %>%
+  dplyr::mutate(sample = rownames(nxo)) %>%
+  dplyr::left_join(., CC_cross$covar %>%
+                     dplyr::mutate(sample = rownames(CC_cross$covar)))
+long_nxo_df <- nxo_df %>%
+  tidyr::pivot_longer(c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,X),
+                      names_to = "chromosome", values_to = "nxos") %>%
+  dplyr::mutate(chromosome = as.factor(chromosome))
+long_nxo_df$chromosome <- factor(long_nxo_df$chromosome, levels = c(paste(seq(1:19)),"X"))
+
+#####
+# Locate crossovers
+#####
+xolocs <- qtl2::locate_xo(geno = m, 
+                          map = map,
+                          cores=parallel::detectCores())
+# xolocs_tr <- purrr::transpose(xolocs)
+# inds <- names(xolocs_tr)
+xolocs_chr <- names(xolocs)
+future::plan(multisession, workers = 16)
+make_chunks <- furrr:::make_chunks
+make_chunks(n_x = length(xolocs_chr), n_workers = 16)
+
+# pullCrossovers(xo_locations = xolocs[[3]],
+#                xo_chrs = xolocs_chr[[3]])
+xolocs_df <- furrr::future_map2(.x = xolocs, 
+                                .y = xolocs_chr,
+                                .f = pullCrossovers,
+                                .options = furrr_options(seed = TRUE)) %>% 
+  Reduce(dplyr::bind_rows,.)
+
+xolocs_df_nest <- xolocs_df %>%
+  dplyr::ungroup() %>%
+  dplyr::group_by(chr) %>%
+  tidyr::nest()
+
+
+#####
+# Identify diplotypes on both sides of crossover
+#####
+future::plan(multisession, workers = 16)
+make_chunks <- furrr:::make_chunks
+make_chunks(n_x = length(xolocs_df_nest$data), n_workers = 16)
+# pullXoDiplotypes(xo_chrs = xolocs_df_nest$chr[[4]],
+#                  xo_dat = xolocs_df_nest$data[[4]])
+
 xodiplotypes <- furrr::future_map2(.x = xolocs_df_nest$chr, 
                                    .y = xolocs_df_nest$data,
                                    .f = pullXoDiplotypes,

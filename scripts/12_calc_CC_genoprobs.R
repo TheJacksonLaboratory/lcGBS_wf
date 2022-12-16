@@ -24,78 +24,7 @@ pullCrossovers <- function(xo_locations, xo_chrs){
     dplyr::select(sample, chr, cM)
 }
 
-# pullXoDiplotypes(xo_chrs = xolocs_df_nest$chr[[4]],
-#                  xo_dat = xolocs_df_nest$data[[4]],
-#                  geno_probs = pr[[4]])
 
-pullXoDiplotypes <- function(xo_chrs, xo_dat, geno_probs){
-  samples <- unique(xo_dat$sample)
-  sample_xo_diplotype_list <- list()
-  print(xo_chrs)
-  for(s in samples){
-    print(s)
-    samp <- xo_dat %>%
-      dplyr::filter(sample == s)
-    dip_list <- list()
-    for(cM in unique(samp$cM)){
-      # print(paste(cM,"cM"))
-      print(which(unique(samp$cM) == cM))
-      cMsearch <- data.frame(CC_cross$gmap[[xo_chrs]]) %>%
-        dplyr::mutate(marker = rownames(.)) %>%
-        `colnames<-`(c("cM","marker"))
-      rownames(cMsearch) <- NULL
-      
-      if(which.min(abs(cMsearch$cM-cM)) < 21){
-        search_index <- seq(from = 1, to = 20, by = 1)
-      } else if(which.min(abs(cMsearch$cM-cM)) > nrow(cMsearch)-21){
-        search_index <- rep(which.min(abs(cMsearch$cM-cM)),21)-seq(from = 20, to = 0, by = -1)
-      } else {
-        search_index <- c(rep(which.min(abs(cMsearch$cM-cM)),21)-seq(from = 10, to = -10, by = -1))
-      }
-      
-      cMsearch_df <- cMsearch[search_index,]
-      search_pos <- cMsearch_df[!is.na(cMsearch_df$cM),]$cM
-      marker <- cMsearch_df[!is.na(cMsearch_df$cM),]$marker
-      
-      options(scipen = 99999)
-      dips <- matrix(nrow = length(unique(search_pos)), ncol = 4)
-      for(p in unique(search_pos)){
-        interval_genoprobs <- qtl2::pull_genoprobpos(genoprobs = geno_probs,
-                                                     map = CC_cross$gmap,
-                                                     chr = xo_chrs,
-                                                     pos = p)
-        samp_genoprobs <- interval_genoprobs[which(rownames(interval_genoprobs) == s),]
-        probs <- samp_genoprobs[which(samp_genoprobs == max(samp_genoprobs))]
-        diplotype <- names(probs)
-        dip_search <- data.frame(diplotype,p,probs) %>%
-          `colnames<-`(c("diplotype","cM","prob"))
-        # write diplotype
-        dips[which(unique(search_pos) == p),1] <- diplotype
-        dips[which(unique(search_pos) == p),2] <- p
-        dips[which(unique(search_pos) == p),3] <- probs
-        dips[which(unique(search_pos) == p),4] <- marker[which(unique(search_pos) == p)]
-      }
-      dips <- data.frame(dips)
-      colnames(dips) <- c("diplotype","cM","prob","marker")
-      for(i in 2:nrow(dips)){
-        if(dips[i-1,]$diplotype == dips[i,]$diplotype){
-          next
-        } else {
-          dips <- dips[c(i-1,i),] %>%
-            dplyr::mutate(loc = c("proximal","distal"))
-          break
-        }
-      }
-      
-      dip_list[[which(unique(samp$cM) == cM)]] <- dips
-    }
-    sample_xo_diplotype_list[[which(samples == s)]] <- Reduce(dplyr::bind_rows, dip_list) %>%
-      dplyr::mutate(sample = s) %>%
-      dplyr::select(sample, everything())
-  }
-  return(Reduce(dplyr::bind_rows, sample_xo_diplotype_list) %>%
-           dplyr::mutate(chr = xo_chrs))
-}
 
 
 gm_meta_build38 <- read.csv("data/gm_uwisc_v1.csv")
@@ -144,7 +73,7 @@ if(!file.exists("data/CC_pr_X.fst")){
   save(m, file = "data/CC_maxmarg_numeric.RData")
 } else {
   load("data/CC_map.RData")
-  load("data/CC_genoprobs.RData")
+  # load("data/CC_genoprobs.RData")
   load("data/CC_maxmarg.RData")
   load("data/CC_maxmarg_numeric.RData")
 }
@@ -192,23 +121,100 @@ xolocs_df <- furrr::future_map2(.x = xolocs,
 
 xolocs_df_nest <- xolocs_df %>%
   dplyr::ungroup() %>%
-  dplyr::group_by(chr) %>%
+  dplyr::distinct() %>%
+  dplyr::group_by(chr, sample) %>%
   tidyr::nest()
 
 
 #####
 # Identify diplotypes on both sides of crossover
 #####
+
+
+pullXoDiplotypes(xo_chrs = xolocs_df_nest$chr[[1]],
+                 xo_dat = xolocs_df_nest$data[[1]],
+                 xo_sample = xolocs_df_nest$sample[[1]])
+
+pullXoDiplotypes <- function(xo_chrs, xo_dat, xo_sample){
+  # samples <- unique(xo_dat$sample)
+  # sample_xo_diplotype_list <- list()
+  cat(paste0(xo_sample, "; (Chromosome ",xo_chrs,")"))
+  cMsearch <- data.frame(CC_cross$gmap[xo_chrs]) %>%
+    dplyr::mutate(marker = rownames(.)) %>%
+    `colnames<-`(c("cM","marker"))
+  rownames(cMsearch) <- NULL
+  
+  dip_list <- apply(xo_dat[,1], 1, function(x){
+    if(which.min(abs(cMsearch$cM-x)) < 21){
+      search_index <- seq(from = 1, to = 20, by = 1)
+    } else if(which.min(abs(cMsearch$cM-x)) > nrow(cMsearch)-21){
+      search_index <- rep(which.min(abs(cMsearch$cM-x)),21)-seq(from = 20, to = 0, by = -1)
+    } else {
+      search_index <- c(rep(which.min(abs(cMsearch$cM-x)),21)-seq(from = 10, to = -10, by = -1))
+    }
+    cMsearch_df <- cMsearch[search_index,]
+    search_pos <- cMsearch_df[!is.na(cMsearch_df$cM),]$cM
+    marker <- cMsearch_df[!is.na(cMsearch_df$cM),]$marker
+    options(scipen = 99999)
+    dips <- matrix(nrow = length(unique(marker)), ncol = 4)
+    fpr <- readRDS("data/CC_pr_fstindex.rds")
+    
+    fpr_sample_chr <- qtl2fst::subset_fst_genoprob(x = fpr, ind = xo_sample, chr = xo_chrs)
+    rm(fpr)
+    #[ind,chr,mar]
+    for(p in unique(marker)){
+      
+      interval_genoprobs <- qtl2::pull_genoprobpos(genoprobs = fpr_sample_chr, 
+                                                   map = CC_cross$gmap,
+                                                   chr = xo_chrs,
+                                                   marker = p)
+      
+      
+      
+      # interval_genoprobs <- qtl2::pull_genoprobpos(genoprobs = fpr,
+      #                                              map = CC_cross$gmap,
+      #                                              chr = xo_chrs,
+      #                                              pos = p)
+      probs <- interval_genoprobs[which(interval_genoprobs == max(interval_genoprobs))]
+      diplotype <- dimnames(interval_genoprobs)[[2]][which(interval_genoprobs == max(interval_genoprobs))]
+    
+      # write diplotype
+      dips[which(unique(marker) == p),1] <- diplotype
+      dips[which(unique(marker) == p),2] <- search_pos[which(unique(marker) == p)]
+      dips[which(unique(marker) == p),3] <- probs
+      dips[which(unique(marker) == p),4] <- p
+    }
+    dips <- data.frame(dips)
+    colnames(dips) <- c("diplotype","cM","prob","marker")
+    for(i in 2:nrow(dips)){
+      if(dips[i-1,]$diplotype == dips[i,]$diplotype){
+        next
+      } else {
+        dips <- dips[c(i-1,i),] %>%
+          dplyr::mutate(loc = c("proximal","distal"))
+        break
+      }
+    }
+    return(dips)
+  })
+  
+  dip_list[[which(unique(samp$cM) == cM)]] <- dips
+    sample_xo_diplotype_list[[which(samples == s)]] <- Reduce(dplyr::bind_rows, dip_list) %>%
+      dplyr::mutate(sample = s) %>%
+      dplyr::select(sample, everything())
+  return(Reduce(dplyr::bind_rows, sample_xo_diplotype_list) %>%
+           dplyr::mutate(chr = xo_chrs))
+}
+
 future::plan(multisession, workers = 16)
 make_chunks <- furrr:::make_chunks
 make_chunks(n_x = length(xolocs_df_nest$data), n_workers = 16)
-# pullXoDiplotypes(xo_chrs = xolocs_df_nest$chr[[4]],
-#                  xo_dat = xolocs_df_nest$data[[4]])
-
 xodiplotypes <- furrr::future_map2(.x = xolocs_df_nest$chr, 
                                    .y = xolocs_df_nest$data,
-                                   .f = pullXoDiplotypes,
+                                   .f = pullXoDiplotypes, 
                                    .options = furrr_options(seed = TRUE))
+
+
 
 all_xo_diplotypes <- list()
 for(i in 1:length(xodiplotypes)){

@@ -1,0 +1,31 @@
+name: Build STITCH container (env/lcGBS_STITCH.Dockerfile)
+
+on:
+  push:
+    paths:
+    - 'env/lcGBS_STITCH.Dockerfile'
+    - 'env/lcGBS_STITCH.yml'
+    - '.github/workflows/build_lcGBS_STITCH_docker.yml'
+  pull_request:
+    paths:
+    - 'env/lcGBS_STITCH.Dockerfile'
+    - 'env/lcGBS_STITCH.yml'
+    - '.github/workflows/build_lcGBS_STITCH_docker.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    # Build Tools
+    - name: Build and Publish
+      uses: elgohr/Publish-Docker-Github-Action@v4
+      with:
+        name: sjwidmay/lcGBS_HR
+        username: ${{ secrets.SJW_DOCKER_USER }}
+        password: ${{ secrets.SJW_DOCKER_PASS }}
+        snapshot: true
+        dockerfile: lcGBS_STITCH.Dockerfile
+        workdir: "env"
+        tags: "stitch"

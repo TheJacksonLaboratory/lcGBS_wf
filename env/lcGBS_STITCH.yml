@@ -1,0 +1,8 @@
+name: lcGBS_stitch
+channels:
+  - defaults
+  - bioconda
+  - conda-forge
+  - r
+dependencies:
+  - r-stitch

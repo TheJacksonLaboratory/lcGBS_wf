@@ -23,10 +23,6 @@ pullCrossovers <- function(xo_locations, xo_chrs){
   Reduce(rbind, ind_crossovers) %>%
     dplyr::select(sample, chr, cM)
 }
-
-
-
-
 gm_meta_build38 <- read.csv("data/gm_uwisc_v1.csv")
 gm_meta_build39 <- read.csv("data/gm_uwisc_v2.csv")
 
@@ -84,7 +80,6 @@ if(!file.exists("data/CC_pr_X.fst")){
 # Count crossovers
 #####
 
-
 percent_missing <- n_missing(CC_cross, "ind", "prop")*100
 nxo <- qtl2::count_xo(m, cores=parallel::detectCores())
 nxo_df <- data.frame(nxo) %>%
@@ -129,11 +124,9 @@ xolocs_df_nest <- xolocs_df %>%
 #####
 # Identify diplotypes on both sides of crossover
 #####
-
-
-pullXoDiplotypes(xo_chrs = xolocs_df_nest$chr[[1]],
-                 xo_dat = xolocs_df_nest$data[[1]],
-                 xo_sample = xolocs_df_nest$sample[[1]])
+# pullXoDiplotypes(xo_chrs = xolocs_df_nest$chr[[1]],
+#                  xo_dat = xolocs_df_nest$data[[1]],
+#                  xo_sample = xolocs_df_nest$sample[[1]])
 
 pullXoDiplotypes <- function(xo_chrs, xo_dat, xo_sample){
   # samples <- unique(xo_dat$sample)
@@ -213,9 +206,6 @@ xodiplotypes <- furrr::future_map2(.x = xolocs_df_nest$chr,
                                    .y = xolocs_df_nest$data,
                                    .f = pullXoDiplotypes, 
                                    .options = furrr_options(seed = TRUE))
-
-
-
 all_xo_diplotypes <- list()
 for(i in 1:length(xodiplotypes)){
   all_xo_diplotypes[[i]] <- xodiplotypes[[i]] %>%

@@ -38,6 +38,8 @@ long_nxo_df <- nxo_df %>%
                       names_to = "chromosome", values_to = "nxos") %>%
   dplyr::mutate(chromosome = as.factor(chromosome))
 long_nxo_df$chromosome <- factor(long_nxo_df$chromosome, levels = c(paste(seq(1:19)),"X"))
+
+# Plot number of crossovers
 nxo_ggplot <- ggplot(long_nxo_df, mapping = aes(x = chromosome, y = nxos, fill = Sex)) + 
   theme_bw() + 
   geom_point(shape = 21, alpha = 0.7, position = position_quasirandom()) + 

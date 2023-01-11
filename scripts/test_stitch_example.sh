@@ -4,4 +4,4 @@
 #SBATCH -t 1:30:00
 #SBATCH -p high_mem
 
-singularity run docker://sjwidmay/lcgbs_hr:stitch /fastscratch/widmas/test_STITCH.R
+singularity run docker://sjwidmay/lcgbs_hr:stitch /projects/compsci/vmp/USERS/widmas/lcGBS_wf/scripts/test_STITCH.R

@@ -19,8 +19,18 @@ cc_ena_fastqs$cc_strain = gsub("^GES15-\\d{5}-(.*)-(.*)_[ATCG]{8}_.*$","\\1/\\2"
 # Turning BAM files index into useful output
 cc_ena_bams$strain = gsub("^ftp.sra.ebi.ac.uk/vol1/run/ERR\\d{3}/ERR\\d+/(.*)_(.*)_[MF]\\d+_[NYGCU]{3,4}\\.sorted\\.bam$","\\1/\\2",cc_ena_bams$submitted_ftp)
 
-# # Downloading files
-for(i in 1:nrow(cc_ena_files)){
+# Downloading all files
+# for(i in 1:nrow(cc_ena_files)){
+#   fastqs = unlist(strsplit(cc_ena_files[i,"submitted_ftp"], ";"))
+#   fastqs_stripped = gsub("ftp.sra.ebi.ac.uk/vol1/run/ERR191/ERR\\d+/(.*\\.fastq.gz)$","\\1",fastqs)
+#   for(j in 1:length(fastqs)){
+#     download.file(fastqs[j], paste0("/fastscratch/widmas/",fastqs_stripped[j]))
+#   }
+# }
+
+# Download some files randomly (to test stitch-nf)
+dir.create("/fastscratch/widmas/")
+for(i in sample(1:nrow(cc_ena_files), size = 20, replace = F)){
   fastqs = unlist(strsplit(cc_ena_files[i,"submitted_ftp"], ";"))
   fastqs_stripped = gsub("ftp.sra.ebi.ac.uk/vol1/run/ERR191/ERR\\d+/(.*\\.fastq.gz)$","\\1",fastqs)
   for(j in 1:length(fastqs)){

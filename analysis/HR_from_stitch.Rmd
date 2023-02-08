@@ -1,0 +1,202 @@
+---
+title: "Haplotype Reconstruction with STITCH-Imputed Genotypes"
+site: workflowr::wflow_site
+output:
+  workflowr::wflow_html:
+    toc: true
+    toc_float: true
+    toc_collapsed: true
+    toc_depth: 3
+    code_folding: hide
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(qtl2)
+library(qtl2fst)
+library(tidyverse)
+library(workflowr)
+library(ggplot2)
+```
+
+The goal of this preliminary analysis was to determine whether STITCH: 1) could provide us useful information and 2) whether this information could be translated or retrofitted for haplotype reconstruction in multiparent crosses
+
+We built a Nextflow pipeline, [stitch-nf](https://github.com/TheJacksonLaboratory/stitch-nf), from the foundation of the NGS OPS WGS pipeline that runs STITCH on mouse samples that were submitted for low-coverage WGS. At the end of this pipeline, we extract 1) imputed sample genotypes and 2) prior probabilities for ancestral genotypes of latent haplotypes used for genotype imputation. These data can be conceptualized as "founder genotypes"
+
+```{r 4WC stitch control file}
+# Establish chromosome vector
+chr <- c(1:19)
+
+# read in covariate file
+metadata <- readr::read_csv(file = "data/4WC_covar.csv", 
+                            col_types = c(sample = "c",
+                                          generation = "n",
+                                          Sex = "c"), 
+                            show_col_types = T)
+
+# match sample names to what is encoded in genotype files
+geno_header <- c(as.character(readr::read_csv(file = "data/STITCH_data/4WC_ddRADseq/geno1.csv", col_names = F, skip = 3, n_max = 1)))[-1]
+new_sampleID <- c()
+for(i in 1:length(metadata$SampleID)){
+  sample_index <- grep(geno_header, pattern = gsub(metadata$SampleID[i], 
+                                                   pattern = "-",
+                                                   replacement = "."))
+  new_sampleID[i] <- geno_header[sample_index]
+}
+
+# Write updated metadata file
+updated_4WC_metadata <- metadata %>%
+  dplyr::mutate(newSampID = new_sampleID) %>%
+  dplyr::select(-SampleID,-Sex) %>%
+  dplyr::select(newSampID, everything()) %>%
+  dplyr::rename(SampleID = newSampID)
+write.csv(updated_4WC_metadata, file = "data/STITCH_data/4WC_ddRADseq/4WC_ddRADseq_crossinfo.csv", quote = F, row.names = F)
+
+# Write updated metadata file
+sex_4WC <- metadata %>%
+  dplyr::mutate(newSampID = new_sampleID) %>%
+  dplyr::select(newSampID, Sex) %>%
+  dplyr::rename(SampleID = newSampID) 
+write.csv(sex_4WC, file = "data/STITCH_data/4WC_ddRADseq/sex_4WC.csv", quote = F, row.names = F)
+
+# Write control file
+qtl2::write_control_file(output_file = "data/STITCH_data/4WC_ddRADseq/4WC_ddRADseq.json",
+                         crosstype="genail4",
+                         description="4WC_ddRADseq",
+                         founder_geno_file=paste0("foundergeno", chr, ".csv"), 
+                         founder_geno_transposed=TRUE,
+                         gmap_file=paste0("gmap", chr, ".csv"),
+                         pmap_file=paste0("pmap", chr, ".csv"),
+                         geno_file=paste0("geno", chr, ".csv"),
+                         geno_transposed = TRUE,
+                         geno_codes=list(A=1, H=2, B=3), 
+                         sex_file = "sex_4WC.csv",
+                         sex_codes=list(F="Female", M="Male"),
+                         # crossinfo_covar=c("Generation","A","B","C","D"), 
+                         crossinfo_file = "4WC_ddRADseq_crossinfo.csv",
+                         overwrite = T)
+
+```
+
+We load in the cross object, and determined the number of markers that are missing data in each sample. These data are from a small test run of ddRADseq libraries prepped by Lydia Wooldridge and the Dumont Lab.
+
+```{r missing genotypes}
+# Load in the cross object
+ddRADseq_4WC <- qtl2::read_cross2("data/STITCH_data/4WC_ddRADseq/4WC_ddRADseq.json")
+
+# Also loading in the cross object from GigaMUGA genotypes
+load("data/4WC_cross.RData")
+
+# Drop null markers
+ddRADseq_4WC <- qtl2::drop_nullmarkers(ddRADseq_4WC)
+
+# Reordering genotypes so that most common allele in founders is first
+for(chr in seq_along(ddRADseq_4WC$founder_geno)) {
+  fg <- ddRADseq_4WC$founder_geno[[chr]]
+  g <- ddRADseq_4WC$geno[[chr]]
+  f1 <- colSums(fg==1)/colSums(fg != 0)
+  
+  fg[fg==0] <- NA
+  g[g==0] <- NA
+  
+  fg[,f1 < 0.5] <- 4 - fg[,f1 < 0.5]
+  g[,f1 < 0.5]  <- 4 - g[,f1 < 0.5]
+  
+  fg[is.na(fg)] <- 0
+  g[is.na(g)] <- 0
+  
+  ddRADseq_4WC$founder_geno[[chr]] <- fg
+  ddRADseq_4WC$geno[[chr]] <- g
+}
+
+# Calculate the percent of missing genotypes per sample
+percent_missing <- qtl2::n_missing(ddRADseq_4WC, "ind", "prop")*100
+missing_genos_df <- data.frame(names(percent_missing), percent_missing) %>%
+  `colnames<-`(c("sample","percent_missing"))
+
+# Plot missing genotypes per sample
+missing_genos_plot <- ggplot(data = missing_genos_df, mapping = aes(x = reorder(sample, percent_missing),
+                                                                    y = percent_missing)) +
+  theme_bw() +
+  geom_point(shape = 21) +
+  labs(title = "4WC Missing Genotypes") +
+  theme(legend.position = "bottom",
+        panel.grid = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank())
+plotly::ggplotly(missing_genos_plot)
+
+percent_missing_cutoff <- 10
+```
+
+`r nrow(missing_genos_df %>% dplyr::filter(percent_missing > percent_missing_cutoff))` sample(s) is/are missing data for greater than `r percent_missing_cutoff`% of markers.
+
+We next calculated whether, based on genotype information alone, samples appear to be duplicates. We estimated from GigaMUGA data that there are probably no duplicate samples.
+
+```{r sample duplicates}
+# Determine if any samples are duplicates based on genetic similarity
+cg <- qtl2::compare_geno(ddRADseq_4WC, cores=0)
+qtl2::plot_compare_geno(x = cg, rug = T, main = "4WC - ddRADseq Data")
+```
+
+From the above plot, it would seem that the genotyping can't distinguish certain samples from each other.
+
+```{r sample duplicates for GM}
+cgGM <- qtl2::compare_geno(X4WC_cross, cores=0)
+qtl2::plot_compare_geno(x = cgGM, rug = T, main = "4WC - GigaMUGA Data")
+```
+
+These mice are F2/F3 individuals, so we expect that they retain a good deal of relatedness. We would hypothesize that due to the lower coverage of the ddRADseq genotyping that we miss areas of the genome that would distinguish individuals from each other.
+
+```{r haplotype reconstruction for ddRADseq}
+# Insert pseudomarkers
+map <- qtl2::insert_pseudomarkers(ddRADseq_4WC$gmap, step = 1)
+
+# Calculate genotype probs
+dir.create("results/4WC_ddRADseq_pr")
+fpr <- qtl2fst::calc_genoprob_fst(cross = ddRADseq_4WC, 
+                                  map = map,
+                                  fbase = "pr",
+                                  fdir = "results/4WC_ddRADseq_pr",
+                                  error_prob=0.002, 
+                                  overwrite=TRUE,
+                                  cores = parallel::detectCores())
+
+# Make viterbi
+m <- maxmarg(fpr, minprob=0.5)
+
+# Phase genotypes
+ph <- qtl2::guess_phase(cross = ddRADseq_4WC, geno = m)
+
+# Write Plots
+X4WCcolors <- c(qtl2::CCcolors[6],
+  "#5ADBFF",
+  "#153B50",
+  qtl2::CCcolors[7])
+names(X4WCcolors)[2:3] <- c("POHN","GOR")
+for(i in 1:nrow(ddRADseq_4WC$cross_info)){
+  png(file=paste0("output/plot_onegeno_",rownames(ddRADseq_4WC$cross_info)[i],".png"))
+  qtl2::plot_onegeno(geno = ph, 
+                     map = map,
+                     ind = i, 
+                     col = X4WCcolors) # add legends here
+  legend(17, 85, 
+         legend=c("A", "B", "C", "D"),
+         fill=X4WCcolors, cex=0.8)
+  dev.off()
+}
+
+```
+
+
+
+```{r comparison to GigaMUGA, eval=FALSE, include=FALSE}
+# Compare these to GigaMUGA results
+load("data/4WC_genoprobs.RData")
+load("data/4WC_maxmarg.RData")
+load("data/4WC_map.RData")
+
+
+```

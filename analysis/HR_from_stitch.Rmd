@@ -19,6 +19,7 @@ library(qtl2fst)
 library(tidyverse)
 library(workflowr)
 library(ggplot2)
+library(RColorBrewer)
 ```
 
 # Overview
@@ -165,22 +166,22 @@ These mice are F2/F3 individuals, so we expect that they retain a good deal of r
 
 ```{r haplotype reconstruction for ddRADseq 4WC, fig.height=9}
 # Insert pseudomarkers
-map <- qtl2::insert_pseudomarkers(ddRADseq_4WC$gmap, step = 1)
+dd_4WC_map <- qtl2::insert_pseudomarkers(ddRADseq_4WC$gmap, step = 1)
 
 # Calculate genotype probs
-dir.create("results/4WC_ddRADseq_pr")
-fpr <- suppressWarnings(qtl2fst::calc_genoprob_fst(cross = ddRADseq_4WC, 
-                                                   map = map,
+dir.create("results/4WC_ddRADseq_pr", showWarnings = F)
+fpr_dd4WC <- suppressWarnings(qtl2fst::calc_genoprob_fst(cross = ddRADseq_4WC, 
+                                                   map = dd_4WC_map,
                                                    fbase = "pr",
                                                    fdir = "results/4WC_ddRADseq_pr",
                                                    error_prob=0.002, 
                                                    overwrite=TRUE,cores = parallel::detectCores()))
 
 # Make viterbi
-m <- maxmarg(fpr, minprob=0.5)
+dd4WC_m <- maxmarg(fpr_dd4WC, minprob=0.5)
 
 # Phase genotypes
-ph <- qtl2::guess_phase(cross = ddRADseq_4WC, geno = m)
+dd4WC_ph <- qtl2::guess_phase(cross = ddRADseq_4WC, geno = dd4WC_m)
 
 # Write Plots
 X4WCcolors <- c(qtl2::CCcolors[6],
@@ -190,8 +191,8 @@ X4WCcolors <- c(qtl2::CCcolors[6],
 names(X4WCcolors)[2:3] <- c("POHN","GOR")
 for(i in 1:nrow(ddRADseq_4WC$cross_info)){
   png(file=paste0("output/plot_onegeno_",rownames(ddRADseq_4WC$cross_info)[i],".png"))
-  qtl2::plot_onegeno(geno = ph, 
-                     map = map,
+  qtl2::plot_onegeno(geno = dd4WC_ph, 
+                     map = dd_4WC_map,
                      ind = i, 
                      col = X4WCcolors) # add legends here
   legend(17, 85, 
@@ -206,17 +207,17 @@ Below are example chromosome paintings of haplotype reconstructions from 4WC ddR
 ```{r haplotype plots 4WC}
 # GigaMUGA haplotypes
 load("data/4WC_genoprobs.RData")
-gm_m <- maxmarg(pr, minprob=0.5)
-gm_ph <- qtl2::guess_phase(cross = X4WC_cross, geno = gm_m)
-gm_map <- qtl2::insert_pseudomarkers(X4WC_cross$gmap, step = 1)
+gm_4WC_m <- maxmarg(pr, minprob=0.5)
+gm_4WC_ph <- qtl2::guess_phase(cross = X4WC_cross, geno = gm_4WC_m)
+gm_4WC_map <- qtl2::insert_pseudomarkers(X4WC_cross$gmap, step = 1)
 
 # Example plots
 indivs <- sample(seq(1:nrow(ddRADseq_4WC$cross_info)), size = 5, replace = F)
 
 # ddRADseq
 plot_indiv <- rownames(ddRADseq_4WC$cross_info)[indivs[1]]
-qtl2::plot_onegeno(geno = ph, 
-                   map = map,
+qtl2::plot_onegeno(geno = dd4WC_ph, 
+                   map = dd_4WC_map,
                    ind = plot_indiv, 
                    col = X4WCcolors,
                    main = plot_indiv) # add legends here
@@ -228,8 +229,8 @@ do_sample_index  <- grep(pattern = gsub(strsplit(plot_indiv, split = "_")[[1]][1
                          x = gsub(rownames(X4WC_cross$cross_info), 
                                   pattern = "-", 
                                   replacement = "."))
-qtl2::plot_onegeno(geno = gm_ph, 
-                   map = gm_map,
+qtl2::plot_onegeno(geno = gm_4WC_ph, 
+                   map = gm_4WC_map,
                    ind = do_sample_index, 
                    col = X4WCcolors,
                    main = rownames(X4WC_cross$cross_info)[do_sample_index]) # add legends here
@@ -237,8 +238,8 @@ legend(17, 85, legend=c("A", "B", "C", "D"), fill=X4WCcolors, cex=0.8)
 
 
 plot_indiv <- rownames(ddRADseq_4WC$cross_info)[indivs[2]]
-qtl2::plot_onegeno(geno = ph, 
-                   map = map,
+qtl2::plot_onegeno(geno = dd4WC_ph, 
+                   map = dd_4WC_map,
                    ind = plot_indiv, 
                    col = X4WCcolors,
                    main = plot_indiv) # add legends here
@@ -249,8 +250,8 @@ do_sample_index  <- grep(pattern = gsub(strsplit(plot_indiv, split = "_")[[1]][1
                          x = gsub(rownames(X4WC_cross$cross_info), 
                                   pattern = "-", 
                                   replacement = "."))
-qtl2::plot_onegeno(geno = gm_ph, 
-                   map = gm_map,
+qtl2::plot_onegeno(geno = gm_4WC_ph, 
+                   map = gm_4WC_map,
                    ind = do_sample_index, 
                    col = X4WCcolors,
                    main = rownames(X4WC_cross$cross_info)[do_sample_index]) # add legends here
@@ -258,8 +259,8 @@ legend(17, 85, legend=c("A", "B", "C", "D"), fill=X4WCcolors, cex=0.8)
 
 
 plot_indiv <- rownames(ddRADseq_4WC$cross_info)[indivs[3]]
-qtl2::plot_onegeno(geno = ph, 
-                   map = map,
+qtl2::plot_onegeno(geno = dd4WC_ph, 
+                   map = dd_4WC_map,
                    ind = plot_indiv, 
                    col = X4WCcolors,
                    main = plot_indiv) # add legends here
@@ -270,8 +271,8 @@ do_sample_index  <- grep(pattern = gsub(strsplit(plot_indiv, split = "_")[[1]][1
                          x = gsub(rownames(X4WC_cross$cross_info), 
                                   pattern = "-", 
                                   replacement = "."))
-qtl2::plot_onegeno(geno = gm_ph, 
-                   map = gm_map,
+qtl2::plot_onegeno(geno = gm_4WC_ph, 
+                   map = gm_4WC_map,
                    ind = do_sample_index, 
                    col = X4WCcolors,
                    main = rownames(X4WC_cross$cross_info)[do_sample_index]) # add legends here
@@ -279,8 +280,8 @@ legend(17, 85, legend=c("A", "B", "C", "D"), fill=X4WCcolors, cex=0.8)
 
 
 plot_indiv <- rownames(ddRADseq_4WC$cross_info)[indivs[4]]
-qtl2::plot_onegeno(geno = ph, 
-                   map = map,
+qtl2::plot_onegeno(geno = dd4WC_ph, 
+                   map = dd_4WC_map,
                    ind = plot_indiv, 
                    col = X4WCcolors,
                    main = plot_indiv) # add legends here
@@ -291,16 +292,16 @@ do_sample_index  <- grep(pattern = gsub(strsplit(plot_indiv, split = "_")[[1]][1
                          x = gsub(rownames(X4WC_cross$cross_info), 
                                   pattern = "-", 
                                   replacement = "."))
-qtl2::plot_onegeno(geno = gm_ph, 
-                   map = gm_map,
+qtl2::plot_onegeno(geno = gm_4WC_ph, 
+                   map = gm_4WC_map,
                    ind = do_sample_index, 
                    col = X4WCcolors,
                    main = rownames(X4WC_cross$cross_info)[do_sample_index]) # add legends here
 legend(17, 85, legend=c("A", "B", "C", "D"), fill=X4WCcolors, cex=0.8)
 
 plot_indiv <- rownames(ddRADseq_4WC$cross_info)[indivs[5]]
-qtl2::plot_onegeno(geno = ph, 
-                   map = map,
+qtl2::plot_onegeno(geno = dd4WC_ph, 
+                   map = dd_4WC_map,
                    ind = plot_indiv, 
                    col = X4WCcolors,
                    main = plot_indiv) # add legends here
@@ -311,8 +312,8 @@ do_sample_index  <- grep(pattern = gsub(strsplit(plot_indiv, split = "_")[[1]][1
                          x = gsub(rownames(X4WC_cross$cross_info), 
                                   pattern = "-", 
                                   replacement = "."))
-qtl2::plot_onegeno(geno = gm_ph, 
-                   map = gm_map,
+qtl2::plot_onegeno(geno = gm_4WC_ph, 
+                   map = gm_4WC_map,
                    ind = do_sample_index, 
                    col = X4WCcolors,
                    main = rownames(X4WC_cross$cross_info)[do_sample_index]) # add legends here
@@ -457,28 +458,28 @@ qtl2::plot_compare_geno(x = cgGM, rug = T, main = "DO - GigaMUGA Data")
 
 ```{r haplotype reconstruction for ddRADseq DO, fig.height=9}
 # Insert pseudomarkers
-map <- qtl2::insert_pseudomarkers(ddRADseq_DO$gmap, step = 1)
+dd_DO_map <- qtl2::insert_pseudomarkers(ddRADseq_DO$gmap, step = 1)
 
 # Calculate genotype probs
-dir.create("results/DO_ddRADseq_pr")
-fpr <- suppressWarnings(qtl2fst::calc_genoprob_fst(cross = ddRADseq_DO, 
-                                                   map = map,
+dir.create("results/DO_ddRADseq_pr", showWarnings = F)
+fpr_ddDO <- suppressWarnings(qtl2fst::calc_genoprob_fst(cross = ddRADseq_DO, 
+                                                   map = dd_DO_map,
                                                    fbase = "pr",
                                                    fdir = "results/DO_ddRADseq_pr",
                                                    error_prob=0.002, 
                                                    overwrite=TRUE,cores = parallel::detectCores()))
 
 # Make viterbi
-m <- maxmarg(fpr, minprob=0.5)
+ddDO_m <- maxmarg(fpr_ddDO, minprob=0.5)
 
 # Phase genotypes
-ph <- qtl2::guess_phase(cross = ddRADseq_DO, geno = m)
+ddDO_ph <- qtl2::guess_phase(cross = ddRADseq_DO, geno = ddDO_m)
 
 # Write Plots
 for(i in 1:nrow(ddRADseq_DO$cross_info)){
   png(file=paste0("output/plot_onegeno_",rownames(ddRADseq_DO$cross_info)[i],".png"))
-  qtl2::plot_onegeno(geno = ph, 
-                     map = map,
+  qtl2::plot_onegeno(geno = ddDO_ph, 
+                     map = dd_DO_map,
                      ind = i, 
                      col = c(qtl2::CCcolors)) # add legends here
   legend(16, 70, 
@@ -494,17 +495,17 @@ Below are example chromosome paintings of haplotype reconstructions from DO ddRA
 ```{r haplotype plots DO}
 # GigaMUGA haplotypes
 load("data/DO_genoprobs.RData")
-gm_m <- maxmarg(pr, minprob=0.5)
-gm_ph <- qtl2::guess_phase(cross = DO_cross, geno = gm_m)
-gm_map <- qtl2::insert_pseudomarkers(DO_cross$gmap, step = 1)
+gm_m_DO <- maxmarg(pr, minprob=0.5)
+gm_ph_DO <- qtl2::guess_phase(cross = DO_cross, geno = gm_m_DO)
+gm_map_DO <- qtl2::insert_pseudomarkers(DO_cross$gmap, step = 1)
 
 # Example plots
 indivs <- sample(seq(1:nrow(ddRADseq_DO$cross_info)), size = 5, replace = F)
 
 # ddRADseq
 plot_indiv <- rownames(ddRADseq_DO$cross_info)[indivs[1]]
-qtl2::plot_onegeno(geno = ph, 
-                   map = map,
+qtl2::plot_onegeno(geno = ddDO_ph, 
+                   map = dd_DO_map,
                    ind = plot_indiv, 
                    col = c(qtl2::CCcolors),
                    main = plot_indiv) # add legends here
@@ -516,8 +517,8 @@ do_sample_index  <- grep(pattern = gsub(strsplit(plot_indiv, split = "_")[[1]][1
                          x = gsub(rownames(DO_cross$cross_info), 
                                   pattern = "-", 
                                   replacement = "."))
-qtl2::plot_onegeno(geno = gm_ph, 
-                   map = gm_map,
+qtl2::plot_onegeno(geno = gm_ph_DO, 
+                   map = gm_map_DO,
                    ind = do_sample_index, 
                    col = c(qtl2::CCcolors),
                    main = rownames(DO_cross$cross_info)[do_sample_index]) # add legends here
@@ -525,8 +526,8 @@ legend(16, 65, legend=LETTERS[1:8], fill=c(qtl2::CCcolors), cex=0.8)
 
 
 plot_indiv <- rownames(ddRADseq_DO$cross_info)[indivs[2]]
-qtl2::plot_onegeno(geno = ph, 
-                   map = map,
+qtl2::plot_onegeno(geno = ddDO_ph, 
+                   map = dd_DO_map,
                    ind = plot_indiv, 
                    col = c(qtl2::CCcolors),
                    main = plot_indiv) # add legends here
@@ -537,8 +538,8 @@ do_sample_index  <- grep(pattern = gsub(strsplit(plot_indiv, split = "_")[[1]][1
                          x = gsub(rownames(DO_cross$cross_info), 
                                   pattern = "-", 
                                   replacement = "."))
-qtl2::plot_onegeno(geno = gm_ph, 
-                   map = gm_map,
+qtl2::plot_onegeno(geno = gm_ph_DO, 
+                   map = gm_map_DO,
                    ind = do_sample_index, 
                    col = c(qtl2::CCcolors),
                    main = rownames(DO_cross$cross_info)[do_sample_index]) # add legends here
@@ -546,8 +547,8 @@ legend(16, 65, legend=LETTERS[1:8], fill=c(qtl2::CCcolors), cex=0.8)
 
 
 plot_indiv <- rownames(ddRADseq_DO$cross_info)[indivs[3]]
-qtl2::plot_onegeno(geno = ph, 
-                   map = map,
+qtl2::plot_onegeno(geno = ddDO_ph, 
+                   map = dd_DO_map,
                    ind = plot_indiv, 
                    col = c(qtl2::CCcolors),
                    main = plot_indiv) # add legends here
@@ -558,8 +559,8 @@ do_sample_index  <- grep(pattern = gsub(strsplit(plot_indiv, split = "_")[[1]][1
                          x = gsub(rownames(DO_cross$cross_info), 
                                   pattern = "-", 
                                   replacement = "."))
-qtl2::plot_onegeno(geno = gm_ph, 
-                   map = gm_map,
+qtl2::plot_onegeno(geno = gm_ph_DO, 
+                   map = gm_map_DO,
                    ind = do_sample_index, 
                    col = c(qtl2::CCcolors),
                    main = rownames(DO_cross$cross_info)[do_sample_index]) # add legends here
@@ -567,8 +568,8 @@ legend(16, 65, legend=LETTERS[1:8], fill=c(qtl2::CCcolors), cex=0.8)
 
 
 plot_indiv <- rownames(ddRADseq_DO$cross_info)[indivs[4]]
-qtl2::plot_onegeno(geno = ph, 
-                   map = map,
+qtl2::plot_onegeno(geno = ddDO_ph, 
+                   map = dd_DO_map,
                    ind = plot_indiv, 
                    col = c(qtl2::CCcolors),
                    main = plot_indiv) # add legends here
@@ -579,8 +580,8 @@ do_sample_index  <- grep(pattern = gsub(strsplit(plot_indiv, split = "_")[[1]][1
                          x = gsub(rownames(DO_cross$cross_info), 
                                   pattern = "-", 
                                   replacement = "."))
-qtl2::plot_onegeno(geno = gm_ph, 
-                   map = gm_map,
+qtl2::plot_onegeno(geno = gm_ph_DO, 
+                   map = gm_map_DO,
                    ind = do_sample_index, 
                    col = c(qtl2::CCcolors),
                    main = rownames(DO_cross$cross_info)[do_sample_index]) # add legends here
@@ -588,8 +589,8 @@ legend(16, 65, legend=LETTERS[1:8], fill=c(qtl2::CCcolors), cex=0.8)
 
 
 plot_indiv <- rownames(ddRADseq_DO$cross_info)[indivs[5]]
-qtl2::plot_onegeno(geno = ph, 
-                   map = map,
+qtl2::plot_onegeno(geno = ddDO_ph, 
+                   map = dd_DO_map,
                    ind = plot_indiv, 
                    col = c(qtl2::CCcolors),
                    main = plot_indiv) # add legends here
@@ -600,11 +601,131 @@ do_sample_index  <- grep(pattern = gsub(strsplit(plot_indiv, split = "_")[[1]][1
                          x = gsub(rownames(DO_cross$cross_info), 
                                   pattern = "-", 
                                   replacement = "."))
-qtl2::plot_onegeno(geno = gm_ph, 
-                   map = gm_map,
+qtl2::plot_onegeno(geno = gm_ph_DO, 
+                   map = gm_map_DO,
                    ind = do_sample_index, 
                    col = c(qtl2::CCcolors),
                    main = rownames(DO_cross$cross_info)[do_sample_index]) # add legends here
 legend(16, 65, legend=LETTERS[1:8], fill=c(qtl2::CCcolors), cex=0.8)
 
 ```
+
+# Comparing Resolution
+
+One question we are ultimately interested in is whether low-pass WGS followed by GBS will provide additional resolution for mapping. Mapping resolution is effectively determined by 1) the number of mice in the cross (number of meioses) and 2) the number of markers with which we're able to capture these recombination events. Below we counted the number of markers available for each genotyping method.
+
+```{r resolution}
+# make cross objects in a list
+qtl2objects <- list(DO_cross, ddRADseq_DO, X4WC_cross, ddRADseq_4WC)
+names(qtl2objects) <- c("DO_GigaMUGA","DO_ddRADseq","4WC_GigaMUGA","4WC_ddRADseq")
+
+# Count the number of markers per chromosome for each population/method
+n_mar_list <- lapply(qtl2objects, function(x) data.frame(qtl2::n_mar(x)))
+
+# wrangle into a df
+n_mar_df <- list()
+for(i in 1:length(n_mar_list)){
+  foo <- data.frame(n_mar_list[[i]])
+  colnames(foo) <- names(n_mar_list)[i]
+  foo$chromosome <- rownames(foo)
+  rownames(foo) <- NULL
+  foo <- foo %>% dplyr::select(chromosome,everything())
+  n_mar_df[[i]] <- foo
+}
+n_mar_df <- suppressMessages(Reduce(full_join, n_mar_df) %>%
+                               tidyr::pivot_longer(-chromosome, names_to = "method") %>%
+                               dplyr::mutate(chromosome = as.factor(chromosome)))
+n_mar_df$chromosome <- factor(n_mar_df$chromosome, levels = as.character(c(1:19,"X")))
+
+# Plot marker counts per chromosome
+ggplot(n_mar_df, mapping = aes(x = chromosome, y = value, fill = method)) + 
+  theme_bw() + 
+  geom_col(position = position_dodge()) + 
+  labs(x = "Chromosome",
+       y = "Number of Markers") + 
+  scale_fill_manual(values = brewer.pal(n = length(unique(n_mar_df$method)), 
+                                        name = "Spectral"), 
+                    name = "Population + Genotyping Method")
+```
+
+# Comparing Crossovers
+
+Based on the haplotype plots, we can guess that the genotypes on either side of detected crossovers won't necessarily match, but we wanted to establish a baseline for how crossover events are detected across genotyping methods.
+
+```{r eval=FALSE, include=FALSE}
+# count crossovers for 4WC samples
+xos_dd4WC <- qtl2::count_xo(dd4WC_m, cores=parallel::detectCores())
+xos_gm4WC <- qtl2::count_xo(gm_4WC_m, cores=parallel::detectCores())
+
+# replace ddRADseq sample names with gm sample names
+for(i in 1:length(rownames(xos_gm4WC))){
+  gm_samplename <- gsub(rownames(xos_gm4WC)[i],pattern = "-", replacement = ".")
+  dd_index <- grep(gm_samplename, x = rownames(xos_dd4WC))
+  rownames(xos_dd4WC)[dd_index] <- gm_samplename
+  rownames(xos_dd4WC)[dd_index] <- gsub(rownames(xos_dd4WC)[dd_index], pattern = "[.]", replacement = "-")
+}
+
+# count crossovers for DO samples
+xos_ddDO <- qtl2::count_xo(ddDO_m, cores=parallel::detectCores())
+xos_gmDO <- qtl2::count_xo(gm_m_DO, cores=parallel::detectCores())
+
+# replace ddRADseq sample names with gm sample names
+for(i in 1:length(rownames(xos_gmDO))){
+  gm_samplename <- gsub(rownames(xos_gmDO)[i],pattern = "-", replacement = ".")
+  dd_index <- grep(gm_samplename, x = rownames(xos_ddDO))
+  rownames(xos_ddDO)[dd_index] <- gm_samplename
+  rownames(xos_ddDO)[dd_index] <- gsub(rownames(xos_ddDO)[dd_index], pattern = "[.]", replacement = "-")
+}
+
+# transform to df
+xo_list <- list(xos_dd4WC, xos_ddDO, xos_gm4WC, xos_gmDO)
+pop_list <- list("4WC", "DO", "4WC", "DO")
+method_list <- list("ddRADseq", "ddRADseq", "GigaMUGA", "GigaMUGA")
+xoToDf <- function(xo, pop, method){
+  new_xo <- as.data.frame(xo) %>% 
+    dplyr::mutate(sample = rownames(xo),
+                  population = pop,
+                  gt_method = method)
+  rownames(new_xo) <- NULL
+  return(new_xo)
+}
+all_xos <- purrr::pmap(.l = list(xo_list, pop_list, method_list), .f = xoToDf) %>%
+  Reduce(full_join, .) %>%
+  tidyr::pivot_longer(-c(sample, population, gt_method), names_to = "chromosome", values_to = "xos") %>%
+  dplyr::mutate(chromosome = as.factor(chromosome))
+all_xos$chromosome <- factor(all_xos$chromosome, levels = as.character(c(1:19,"X")))
+
+# Plot crossovers - 4WC
+all_xos %>%
+  dplyr::filter(population == "4WC") %>%
+  tidyr::pivot_wider(names_from = gt_method, values_from = xos) %>%
+  ggplot(., mapping = aes(x = GigaMUGA, 
+                          y = ddRADseq)) + 
+  theme_bw() + 
+  geom_point(alpha = 0.5) + 
+  geom_abline(slope = 1) + 
+  geom_smooth(method = "lm") + 
+  facet_wrap(.~chromosome, nrow = 5) + 
+  theme(panel.grid = element_blank()) +
+  labs(x = "Number of Crossovers - GigaMUGA",
+       y = "Number of Crossovers - ddRADseq")
+
+# Plot crossovers - DO
+all_xos %>%
+  dplyr::filter(population == "DO") %>%
+  tidyr::pivot_wider(names_from = gt_method, values_from = xos) %>%
+  ggplot(., mapping = aes(x = GigaMUGA, 
+                          y = ddRADseq)) + 
+  theme_bw() + 
+  geom_point(alpha = 0.5) + 
+  geom_abline(slope = 1) + 
+  geom_smooth(method = "lm") + 
+  facet_wrap(.~chromosome, nrow = 5) + 
+  theme(panel.grid = element_blank()) +
+  labs(x = "Number of Crossovers - GigaMUGA",
+       y = "Number of Crossovers - ddRADseq")
+```
+
+As expected based on previous analyses, there is no correlation between crossover events in the same samples using different genotyping methods. We hypothesize this concordance will improve with better sequencing coverage and, therefore, greater genotyping and haplotype inference accuracy by STITCH.
+
+

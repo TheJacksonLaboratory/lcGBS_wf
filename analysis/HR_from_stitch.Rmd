@@ -29,7 +29,7 @@ We built a Nextflow pipeline, [stitch-nf](https://github.com/TheJacksonLaborator
 
 # Four-way Cross ddRADseq Test Samples
 
-## Writing control  file
+## Writing control file
 
 ```{r 4WC stitch control file}
 # Establish chromosome vector
@@ -43,7 +43,8 @@ metadata <- readr::read_csv(file = "data/4WC_covar.csv",
                             show_col_types = T)
 
 # match sample names to what is encoded in genotype files
-geno_header <- c(as.character(readr::read_csv(file = "data/STITCH_data/4WC_ddRADseq/geno1.csv", col_names = F, skip = 3, n_max = 1)))[-1]
+geno_header <- c(as.character(readr::read_csv(file = "data/STITCH_data/4WC_ddRADseq/geno1.csv", 
+                                              col_names = F, skip = 3, n_max = 1)))[-1]
 new_sampleID <- c()
 for(i in 1:length(metadata$SampleID)){
   sample_index <- grep(geno_header, pattern = gsub(metadata$SampleID[i], 
@@ -90,7 +91,7 @@ We load in the cross object, and determined the number of markers that are missi
 
 ## Calculating missing genotypes
 
-```{r missing genotypes}
+```{r missing genotypes 4WC}
 # Load in the cross object
 ddRADseq_4WC <- qtl2::read_cross2("data/STITCH_data/4WC_ddRADseq/4WC_ddRADseq.json")
 
@@ -139,13 +140,13 @@ plotly::ggplotly(missing_genos_plot)
 percent_missing_cutoff <- 10
 ```
 
-`r nrow(missing_genos_df %>% dplyr::filter(percent_missing > percent_missing_cutoff))` sample(s) is/are missing data for greater than `r percent_missing_cutoff`% of markers.
+`r nrow(missing_genos_df %>% dplyr::filter(percent_missing > percent_missing_cutoff))` 4WC sample(s) is/are missing data for greater than `r percent_missing_cutoff`% of markers.
 
 ## Sample duplicates
 
 We next calculated whether, based on genotype information alone, samples appear to be duplicates. We estimated from GigaMUGA data that there are probably no duplicate samples.
 
-```{r sample duplicates}
+```{r sample duplicates 4WC}
 # Determine if any samples are duplicates based on genetic similarity
 cg <- qtl2::compare_geno(ddRADseq_4WC, cores=0)
 qtl2::plot_compare_geno(x = cg, rug = T, main = "4WC - ddRADseq Data")
@@ -162,7 +163,7 @@ These mice are F2/F3 individuals, so we expect that they retain a good deal of r
 
 ## Haplotype reconstruction
 
-```{r haplotype reconstruction for ddRADseq, fig.height=9}
+```{r haplotype reconstruction for ddRADseq 4WC, fig.height=9}
 # Insert pseudomarkers
 map <- qtl2::insert_pseudomarkers(ddRADseq_4WC$gmap, step = 1)
 
@@ -200,9 +201,9 @@ for(i in 1:nrow(ddRADseq_4WC$cross_info)){
 }
 ```
 
-Below are example chromosome paintings of haplotype reconstructions from ddRADseq samples compared to the same individiuals genotyped with GigaMUGA.
+Below are example chromosome paintings of haplotype reconstructions from 4WC ddRADseq samples compared to the same individiuals genotyped with GigaMUGA.
 
-```{r}
+```{r haplotype plots 4WC}
 # GigaMUGA haplotypes
 load("data/4WC_genoprobs.RData")
 gm_m <- maxmarg(pr, minprob=0.5)
@@ -319,8 +320,291 @@ legend(17, 85, legend=c("A", "B", "C", "D"), fill=X4WCcolors, cex=0.8)
 
 ```
 
-A few things can be observed from these plots. First, the ddRADseq haplotypes reflect complete homozygosity, which is not possible for these mice. This is could be due to low coverage in these test runs; a lack of sequencing depth across sites will result in not enough data to call heterozygous sites confidently. The degree of missing genotypes across samples reflects this lack of depth. 
+A few things can be observed from these plots. First, the ddRADseq haplotypes reflect complete homozygosity, which is not possible for these mice. This is could be due to low coverage in these test runs; a lack of sequencing depth across sites will result in not enough data to call heterozygous sites confidently. The degree of missing genotypes across samples reflects this lack of depth.
 
 Second, many of the haplotype identities are discordant between the GigaMUGA and ddRADseq samples at the same genomic sites. This could reflect the fact that the same ancestral haplotype that STITCH denotes as "A" is not the same as the haplotype derived from qtl2. We could work around this by supplying a smaller set of well-curated consensus genotypes. We haven't tested whether including these data improve the functionality of STITCH for our purposes.
 
 # Diversity Outbred ddRADseq Test Samples
+
+## Writing control file
+
+There are a handful of DO samples in the metadata which were not sequenced as a test run. Those samples throw the "sample from metadata not sequenced" error observed below.
+
+```{r DO stitch control file}
+# Establish chromosome vector
+chr <- c(1,3:19)
+
+# read in covariate file
+metadata <- readr::read_csv(file = "data/DO_covar.csv", 
+                            col_types = c(sample = "c",
+                                          Sex = "c",
+                                          generation = "n"), 
+                            show_col_types = T)
+
+# match sample names to what is encoded in genotype files
+geno_header <- c(as.character(readr::read_csv(file = "data/STITCH_data/DO_ddRADseq/geno1.csv", 
+                                              col_names = F, skip = 3, n_max = 1)))[-1]
+new_sampleID <- c()
+for(i in 1:length(metadata$SampleID)){
+  sample_index <- grep(geno_header, pattern = gsub(metadata$SampleID[i], 
+                                                   pattern = "-",
+                                                   replacement = "."))
+  if(length(sample_index) == 0){
+    print(paste("sample from metadata not sequenced:", metadata$SampleID[i]))
+    new_sampleID[i] <- NA
+  } else {
+    new_sampleID[i] <- geno_header[sample_index]
+  }
+  
+}
+
+# Write updated metadata file
+updated_DO_metadata <- metadata %>%
+  dplyr::mutate(newSampID = new_sampleID) %>%
+  dplyr::select(-SampleID) %>%
+  dplyr::select(newSampID, everything()) %>%
+  dplyr::rename(SampleID = newSampID) %>%
+  dplyr::filter(!is.na(SampleID))
+write.csv(updated_DO_metadata, file = "data/STITCH_data/DO_ddRADseq/DO_ddRADseq_crossinfo.csv", quote = F, row.names = F)
+
+# Write control file
+qtl2::write_control_file(output_file = "data/STITCH_data/DO_ddRADseq/DO_ddRADseq.json",
+                         crosstype="do",
+                         description="DO_ddRADseq",
+                         founder_geno_file=paste0("foundergeno", chr, ".csv"), 
+                         founder_geno_transposed=TRUE,
+                         gmap_file=paste0("gmap", chr, ".csv"),
+                         pmap_file=paste0("pmap", chr, ".csv"),
+                         geno_file=paste0("geno", chr, ".csv"),
+                         geno_transposed = TRUE,
+                         geno_codes=list(A=1, H=2, B=3), 
+                         sex_covar = "Sex",
+                         sex_codes=list(F="Female", M="Male"), 
+                         covar_file = "DO_ddRADseq_crossinfo.csv",
+                         crossinfo_covar="Generation",
+                         overwrite = T)
+```
+
+## Calculating missing genotypes
+
+```{r missing genotypes DO}
+# Load in the cross object
+ddRADseq_DO <- qtl2::read_cross2("data/STITCH_data/DO_ddRADseq/DO_ddRADseq.json")
+
+# Also loading in the cross object from GigaMUGA genotypes
+load("data/DO_cross.RData")
+
+# Drop null markers
+ddRADseq_DO <- qtl2::drop_nullmarkers(ddRADseq_DO)
+
+# Reordering genotypes so that most common allele in founders is first
+for(chr in seq_along(ddRADseq_DO$founder_geno)) {
+  fg <- ddRADseq_DO$founder_geno[[chr]]
+  g <- ddRADseq_DO$geno[[chr]]
+  f1 <- colSums(fg==1)/colSums(fg != 0)
+  
+  fg[fg==0] <- NA
+  g[g==0] <- NA
+  
+  fg[,f1 < 0.5] <- 4 - fg[,f1 < 0.5]
+  g[,f1 < 0.5]  <- 4 - g[,f1 < 0.5]
+  
+  fg[is.na(fg)] <- 0
+  g[is.na(g)] <- 0
+  
+  ddRADseq_DO$founder_geno[[chr]] <- fg
+  ddRADseq_DO$geno[[chr]] <- g
+}
+
+# Calculate the percent of missing genotypes per sample
+percent_missing <- qtl2::n_missing(ddRADseq_DO, "ind", "prop")*100
+missing_genos_df <- data.frame(names(percent_missing), percent_missing) %>%
+  `colnames<-`(c("sample","percent_missing"))
+
+# Plot missing genotypes per sample
+missing_genos_plot <- ggplot(data = missing_genos_df, mapping = aes(x = reorder(sample, percent_missing),
+                                                                    y = percent_missing)) +
+  theme_bw() +
+  geom_point(shape = 21) +
+  labs(title = "DO Missing Genotypes") +
+  theme(legend.position = "bottom",
+        panel.grid = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank())
+plotly::ggplotly(missing_genos_plot)
+
+percent_missing_cutoff <- 10
+```
+
+`r nrow(missing_genos_df %>% dplyr::filter(percent_missing > percent_missing_cutoff))` DO sample(s) is/are missing data for greater than `r percent_missing_cutoff`% of markers.
+
+## Sample Duplicates
+
+```{r sample duplicates DO}
+# Determine if any samples are duplicates based on genetic similarity
+cg <- qtl2::compare_geno(ddRADseq_DO, cores=0)
+qtl2::plot_compare_geno(x = cg, rug = T, main = "DO - ddRADseq Data")
+```
+
+There are many "duplicates" among the DO ddRADseq samples as well. Compared to the DO GigaMUGA samples:
+
+```{r sample duplicates DO GM}
+cgGM <- qtl2::compare_geno(DO_cross, cores=0)
+qtl2::plot_compare_geno(x = cgGM, rug = T, main = "DO - GigaMUGA Data")
+```
+
+## Haplotype Reconstruction
+
+```{r haplotype reconstruction for ddRADseq DO, fig.height=9}
+# Insert pseudomarkers
+map <- qtl2::insert_pseudomarkers(ddRADseq_DO$gmap, step = 1)
+
+# Calculate genotype probs
+dir.create("results/DO_ddRADseq_pr")
+fpr <- suppressWarnings(qtl2fst::calc_genoprob_fst(cross = ddRADseq_DO, 
+                                                   map = map,
+                                                   fbase = "pr",
+                                                   fdir = "results/DO_ddRADseq_pr",
+                                                   error_prob=0.002, 
+                                                   overwrite=TRUE,cores = parallel::detectCores()))
+
+# Make viterbi
+m <- maxmarg(fpr, minprob=0.5)
+
+# Phase genotypes
+ph <- qtl2::guess_phase(cross = ddRADseq_DO, geno = m)
+
+# Write Plots
+for(i in 1:nrow(ddRADseq_DO$cross_info)){
+  png(file=paste0("output/plot_onegeno_",rownames(ddRADseq_DO$cross_info)[i],".png"))
+  qtl2::plot_onegeno(geno = ph, 
+                     map = map,
+                     ind = i, 
+                     col = c(qtl2::CCcolors)) # add legends here
+  legend(16, 70, 
+         legend=c("A", "B", "C", "D",
+                  "E", "F", "G", "H"),
+         fill=c(qtl2::CCcolors), cex=0.8)
+  dev.off()
+}
+```
+
+Below are example chromosome paintings of haplotype reconstructions from DO ddRADseq samples compared to the same individuals genotyped with GigaMUGA.
+
+```{r haplotype plots DO}
+# GigaMUGA haplotypes
+load("data/DO_genoprobs.RData")
+gm_m <- maxmarg(pr, minprob=0.5)
+gm_ph <- qtl2::guess_phase(cross = DO_cross, geno = gm_m)
+gm_map <- qtl2::insert_pseudomarkers(DO_cross$gmap, step = 1)
+
+# Example plots
+indivs <- sample(seq(1:nrow(ddRADseq_DO$cross_info)), size = 5, replace = F)
+
+# ddRADseq
+plot_indiv <- rownames(ddRADseq_DO$cross_info)[indivs[1]]
+qtl2::plot_onegeno(geno = ph, 
+                   map = map,
+                   ind = plot_indiv, 
+                   col = c(qtl2::CCcolors),
+                   main = plot_indiv) # add legends here
+legend(16, 65, legend=LETTERS[1:8], fill=c(qtl2::CCcolors), cex=0.8)
+# DO
+do_sample_index  <- grep(pattern = gsub(strsplit(plot_indiv, split = "_")[[1]][1], 
+                                        pattern = "ddRADseq.",
+                                        replacement = ""),
+                         x = gsub(rownames(DO_cross$cross_info), 
+                                  pattern = "-", 
+                                  replacement = "."))
+qtl2::plot_onegeno(geno = gm_ph, 
+                   map = gm_map,
+                   ind = do_sample_index, 
+                   col = c(qtl2::CCcolors),
+                   main = rownames(DO_cross$cross_info)[do_sample_index]) # add legends here
+legend(16, 65, legend=LETTERS[1:8], fill=c(qtl2::CCcolors), cex=0.8)
+
+
+plot_indiv <- rownames(ddRADseq_DO$cross_info)[indivs[2]]
+qtl2::plot_onegeno(geno = ph, 
+                   map = map,
+                   ind = plot_indiv, 
+                   col = c(qtl2::CCcolors),
+                   main = plot_indiv) # add legends here
+legend(16, 65, legend=LETTERS[1:8], fill=c(qtl2::CCcolors), cex=0.8)
+do_sample_index  <- grep(pattern = gsub(strsplit(plot_indiv, split = "_")[[1]][1], 
+                                        pattern = "ddRADseq.",
+                                        replacement = ""),
+                         x = gsub(rownames(DO_cross$cross_info), 
+                                  pattern = "-", 
+                                  replacement = "."))
+qtl2::plot_onegeno(geno = gm_ph, 
+                   map = gm_map,
+                   ind = do_sample_index, 
+                   col = c(qtl2::CCcolors),
+                   main = rownames(DO_cross$cross_info)[do_sample_index]) # add legends here
+legend(16, 65, legend=LETTERS[1:8], fill=c(qtl2::CCcolors), cex=0.8)
+
+
+plot_indiv <- rownames(ddRADseq_DO$cross_info)[indivs[3]]
+qtl2::plot_onegeno(geno = ph, 
+                   map = map,
+                   ind = plot_indiv, 
+                   col = c(qtl2::CCcolors),
+                   main = plot_indiv) # add legends here
+legend(16, 65, legend=LETTERS[1:8], fill=c(qtl2::CCcolors), cex=0.8)
+do_sample_index  <- grep(pattern = gsub(strsplit(plot_indiv, split = "_")[[1]][1], 
+                                        pattern = "ddRADseq.",
+                                        replacement = ""),
+                         x = gsub(rownames(DO_cross$cross_info), 
+                                  pattern = "-", 
+                                  replacement = "."))
+qtl2::plot_onegeno(geno = gm_ph, 
+                   map = gm_map,
+                   ind = do_sample_index, 
+                   col = c(qtl2::CCcolors),
+                   main = rownames(DO_cross$cross_info)[do_sample_index]) # add legends here
+legend(16, 65, legend=LETTERS[1:8], fill=c(qtl2::CCcolors), cex=0.8)
+
+
+plot_indiv <- rownames(ddRADseq_DO$cross_info)[indivs[4]]
+qtl2::plot_onegeno(geno = ph, 
+                   map = map,
+                   ind = plot_indiv, 
+                   col = c(qtl2::CCcolors),
+                   main = plot_indiv) # add legends here
+legend(16, 65, legend=LETTERS[1:8], fill=c(qtl2::CCcolors), cex=0.8)
+do_sample_index  <- grep(pattern = gsub(strsplit(plot_indiv, split = "_")[[1]][1], 
+                                        pattern = "ddRADseq.",
+                                        replacement = ""),
+                         x = gsub(rownames(DO_cross$cross_info), 
+                                  pattern = "-", 
+                                  replacement = "."))
+qtl2::plot_onegeno(geno = gm_ph, 
+                   map = gm_map,
+                   ind = do_sample_index, 
+                   col = c(qtl2::CCcolors),
+                   main = rownames(DO_cross$cross_info)[do_sample_index]) # add legends here
+legend(16, 65, legend=LETTERS[1:8], fill=c(qtl2::CCcolors), cex=0.8)
+
+
+plot_indiv <- rownames(ddRADseq_DO$cross_info)[indivs[5]]
+qtl2::plot_onegeno(geno = ph, 
+                   map = map,
+                   ind = plot_indiv, 
+                   col = c(qtl2::CCcolors),
+                   main = plot_indiv) # add legends here
+legend(16, 65, legend=LETTERS[1:8], fill=c(qtl2::CCcolors), cex=0.8)
+do_sample_index  <- grep(pattern = gsub(strsplit(plot_indiv, split = "_")[[1]][1], 
+                                        pattern = "ddRADseq.",
+                                        replacement = ""),
+                         x = gsub(rownames(DO_cross$cross_info), 
+                                  pattern = "-", 
+                                  replacement = "."))
+qtl2::plot_onegeno(geno = gm_ph, 
+                   map = gm_map,
+                   ind = do_sample_index, 
+                   col = c(qtl2::CCcolors),
+                   main = rownames(DO_cross$cross_info)[do_sample_index]) # add legends here
+legend(16, 65, legend=LETTERS[1:8], fill=c(qtl2::CCcolors), cex=0.8)
+
+```

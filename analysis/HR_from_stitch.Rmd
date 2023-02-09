@@ -652,7 +652,7 @@ ggplot(n_mar_df, mapping = aes(x = chromosome, y = value, fill = method)) +
 
 Based on the haplotype plots, we can guess that the genotypes on either side of detected crossovers won't necessarily match, but we wanted to establish a baseline for how crossover events are detected across genotyping methods.
 
-```{r eval=FALSE, include=FALSE}
+```{r}
 # count crossovers for 4WC samples
 xos_dd4WC <- qtl2::count_xo(dd4WC_m, cores=parallel::detectCores())
 xos_gm4WC <- qtl2::count_xo(gm_4WC_m, cores=parallel::detectCores())

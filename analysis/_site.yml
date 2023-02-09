@@ -1,7 +1,7 @@
 name: "lcGBS_wf"
 output_dir: ../docs
 navbar:
-  title: "lcGBS_wf"
+  title: "GBS SSIF Analyses"
   left:
   - text: Home
     href: index.html
@@ -13,5 +13,5 @@ output:
   workflowr::wflow_html:
     toc: yes
     toc_float: yes
-    theme: cosmo
+    theme: flatly
     highlight: textmate

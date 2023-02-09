@@ -21,9 +21,15 @@ library(workflowr)
 library(ggplot2)
 ```
 
+# Overview
+
 The goal of this preliminary analysis was to determine whether STITCH: 1) could provide us useful information and 2) whether this information could be translated or retrofitted for haplotype reconstruction in multiparent crosses
 
 We built a Nextflow pipeline, [stitch-nf](https://github.com/TheJacksonLaboratory/stitch-nf), from the foundation of the NGS OPS WGS pipeline that runs STITCH on mouse samples that were submitted for low-coverage WGS. At the end of this pipeline, we extract 1) imputed sample genotypes and 2) prior probabilities for ancestral genotypes of latent haplotypes used for genotype imputation. These data can be conceptualized as "founder genotypes"
+
+# Four-way Cross ddRADseq Test Samples
+
+## Writing control  file
 
 ```{r 4WC stitch control file}
 # Establish chromosome vector
@@ -82,6 +88,8 @@ qtl2::write_control_file(output_file = "data/STITCH_data/4WC_ddRADseq/4WC_ddRADs
 
 We load in the cross object, and determined the number of markers that are missing data in each sample. These data are from a small test run of ddRADseq libraries prepped by Lydia Wooldridge and the Dumont Lab.
 
+## Calculating missing genotypes
+
 ```{r missing genotypes}
 # Load in the cross object
 ddRADseq_4WC <- qtl2::read_cross2("data/STITCH_data/4WC_ddRADseq/4WC_ddRADseq.json")
@@ -133,6 +141,8 @@ percent_missing_cutoff <- 10
 
 `r nrow(missing_genos_df %>% dplyr::filter(percent_missing > percent_missing_cutoff))` sample(s) is/are missing data for greater than `r percent_missing_cutoff`% of markers.
 
+## Sample duplicates
+
 We next calculated whether, based on genotype information alone, samples appear to be duplicates. We estimated from GigaMUGA data that there are probably no duplicate samples.
 
 ```{r sample duplicates}
@@ -150,19 +160,20 @@ qtl2::plot_compare_geno(x = cgGM, rug = T, main = "4WC - GigaMUGA Data")
 
 These mice are F2/F3 individuals, so we expect that they retain a good deal of relatedness. We would hypothesize that due to the lower coverage of the ddRADseq genotyping that we miss areas of the genome that would distinguish individuals from each other.
 
-```{r haplotype reconstruction for ddRADseq}
+## Haplotype reconstruction
+
+```{r haplotype reconstruction for ddRADseq, fig.height=9}
 # Insert pseudomarkers
 map <- qtl2::insert_pseudomarkers(ddRADseq_4WC$gmap, step = 1)
 
 # Calculate genotype probs
 dir.create("results/4WC_ddRADseq_pr")
-fpr <- qtl2fst::calc_genoprob_fst(cross = ddRADseq_4WC, 
-                                  map = map,
-                                  fbase = "pr",
-                                  fdir = "results/4WC_ddRADseq_pr",
-                                  error_prob=0.002, 
-                                  overwrite=TRUE,
-                                  cores = parallel::detectCores())
+fpr <- suppressWarnings(qtl2fst::calc_genoprob_fst(cross = ddRADseq_4WC, 
+                                                   map = map,
+                                                   fbase = "pr",
+                                                   fdir = "results/4WC_ddRADseq_pr",
+                                                   error_prob=0.002, 
+                                                   overwrite=TRUE,cores = parallel::detectCores()))
 
 # Make viterbi
 m <- maxmarg(fpr, minprob=0.5)
@@ -187,16 +198,129 @@ for(i in 1:nrow(ddRADseq_4WC$cross_info)){
          fill=X4WCcolors, cex=0.8)
   dev.off()
 }
-
 ```
 
+Below are example chromosome paintings of haplotype reconstructions from ddRADseq samples compared to the same individiuals genotyped with GigaMUGA.
 
-
-```{r comparison to GigaMUGA, eval=FALSE, include=FALSE}
-# Compare these to GigaMUGA results
+```{r}
+# GigaMUGA haplotypes
 load("data/4WC_genoprobs.RData")
-load("data/4WC_maxmarg.RData")
-load("data/4WC_map.RData")
+gm_m <- maxmarg(pr, minprob=0.5)
+gm_ph <- qtl2::guess_phase(cross = X4WC_cross, geno = gm_m)
+gm_map <- qtl2::insert_pseudomarkers(X4WC_cross$gmap, step = 1)
 
+# Example plots
+indivs <- sample(seq(1:nrow(ddRADseq_4WC$cross_info)), size = 5, replace = F)
+
+# ddRADseq
+plot_indiv <- rownames(ddRADseq_4WC$cross_info)[indivs[1]]
+qtl2::plot_onegeno(geno = ph, 
+                   map = map,
+                   ind = plot_indiv, 
+                   col = X4WCcolors,
+                   main = plot_indiv) # add legends here
+legend(17, 85, legend=c("A", "B", "C", "D"), fill=X4WCcolors, cex=0.8)
+# DO
+do_sample_index  <- grep(pattern = gsub(strsplit(plot_indiv, split = "_")[[1]][1], 
+                                        pattern = "ddRADseq.",
+                                        replacement = ""),
+                         x = gsub(rownames(X4WC_cross$cross_info), 
+                                  pattern = "-", 
+                                  replacement = "."))
+qtl2::plot_onegeno(geno = gm_ph, 
+                   map = gm_map,
+                   ind = do_sample_index, 
+                   col = X4WCcolors,
+                   main = rownames(X4WC_cross$cross_info)[do_sample_index]) # add legends here
+legend(17, 85, legend=c("A", "B", "C", "D"), fill=X4WCcolors, cex=0.8)
+
+
+plot_indiv <- rownames(ddRADseq_4WC$cross_info)[indivs[2]]
+qtl2::plot_onegeno(geno = ph, 
+                   map = map,
+                   ind = plot_indiv, 
+                   col = X4WCcolors,
+                   main = plot_indiv) # add legends here
+legend(17, 85, legend=c("A", "B", "C", "D"), fill=X4WCcolors, cex=0.8)
+do_sample_index  <- grep(pattern = gsub(strsplit(plot_indiv, split = "_")[[1]][1], 
+                                        pattern = "ddRADseq.",
+                                        replacement = ""),
+                         x = gsub(rownames(X4WC_cross$cross_info), 
+                                  pattern = "-", 
+                                  replacement = "."))
+qtl2::plot_onegeno(geno = gm_ph, 
+                   map = gm_map,
+                   ind = do_sample_index, 
+                   col = X4WCcolors,
+                   main = rownames(X4WC_cross$cross_info)[do_sample_index]) # add legends here
+legend(17, 85, legend=c("A", "B", "C", "D"), fill=X4WCcolors, cex=0.8)
+
+
+plot_indiv <- rownames(ddRADseq_4WC$cross_info)[indivs[3]]
+qtl2::plot_onegeno(geno = ph, 
+                   map = map,
+                   ind = plot_indiv, 
+                   col = X4WCcolors,
+                   main = plot_indiv) # add legends here
+legend(17, 85, legend=c("A", "B", "C", "D"), fill=X4WCcolors, cex=0.8)
+do_sample_index  <- grep(pattern = gsub(strsplit(plot_indiv, split = "_")[[1]][1], 
+                                        pattern = "ddRADseq.",
+                                        replacement = ""),
+                         x = gsub(rownames(X4WC_cross$cross_info), 
+                                  pattern = "-", 
+                                  replacement = "."))
+qtl2::plot_onegeno(geno = gm_ph, 
+                   map = gm_map,
+                   ind = do_sample_index, 
+                   col = X4WCcolors,
+                   main = rownames(X4WC_cross$cross_info)[do_sample_index]) # add legends here
+legend(17, 85, legend=c("A", "B", "C", "D"), fill=X4WCcolors, cex=0.8)
+
+
+plot_indiv <- rownames(ddRADseq_4WC$cross_info)[indivs[4]]
+qtl2::plot_onegeno(geno = ph, 
+                   map = map,
+                   ind = plot_indiv, 
+                   col = X4WCcolors,
+                   main = plot_indiv) # add legends here
+legend(17, 85, legend=c("A", "B", "C", "D"), fill=X4WCcolors, cex=0.8)
+do_sample_index  <- grep(pattern = gsub(strsplit(plot_indiv, split = "_")[[1]][1], 
+                                        pattern = "ddRADseq.",
+                                        replacement = ""),
+                         x = gsub(rownames(X4WC_cross$cross_info), 
+                                  pattern = "-", 
+                                  replacement = "."))
+qtl2::plot_onegeno(geno = gm_ph, 
+                   map = gm_map,
+                   ind = do_sample_index, 
+                   col = X4WCcolors,
+                   main = rownames(X4WC_cross$cross_info)[do_sample_index]) # add legends here
+legend(17, 85, legend=c("A", "B", "C", "D"), fill=X4WCcolors, cex=0.8)
+
+plot_indiv <- rownames(ddRADseq_4WC$cross_info)[indivs[5]]
+qtl2::plot_onegeno(geno = ph, 
+                   map = map,
+                   ind = plot_indiv, 
+                   col = X4WCcolors,
+                   main = plot_indiv) # add legends here
+legend(17, 85, legend=c("A", "B", "C", "D"), fill=X4WCcolors, cex=0.8)
+do_sample_index  <- grep(pattern = gsub(strsplit(plot_indiv, split = "_")[[1]][1], 
+                                        pattern = "ddRADseq.",
+                                        replacement = ""),
+                         x = gsub(rownames(X4WC_cross$cross_info), 
+                                  pattern = "-", 
+                                  replacement = "."))
+qtl2::plot_onegeno(geno = gm_ph, 
+                   map = gm_map,
+                   ind = do_sample_index, 
+                   col = X4WCcolors,
+                   main = rownames(X4WC_cross$cross_info)[do_sample_index]) # add legends here
+legend(17, 85, legend=c("A", "B", "C", "D"), fill=X4WCcolors, cex=0.8)
 
 ```
+
+A few things can be observed from these plots. First, the ddRADseq haplotypes reflect complete homozygosity, which is not possible for these mice. This is could be due to low coverage in these test runs; a lack of sequencing depth across sites will result in not enough data to call heterozygous sites confidently. The degree of missing genotypes across samples reflects this lack of depth. 
+
+Second, many of the haplotype identities are discordant between the GigaMUGA and ddRADseq samples at the same genomic sites. This could reflect the fact that the same ancestral haplotype that STITCH denotes as "A" is not the same as the haplotype derived from qtl2. We could work around this by supplying a smaller set of well-curated consensus genotypes. We haven't tested whether including these data improve the functionality of STITCH for our purposes.
+
+# Diversity Outbred ddRADseq Test Samples

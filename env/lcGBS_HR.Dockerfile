@@ -15,7 +15,7 @@ RUN R -e "install.packages('purrr')"
 RUN R -e "install.packages('furrr',dependencies = T)"
 RUN R -e "install.packages('dplyr')"
 RUN R -e "install.packages('tidyr')"
+RUN R -e "install.packages('readr')"
 RUN R -e "install.packages('magrittr')"
 RUN R -e "install.packages('ggplot2')"
 RUN R -e "install.packages('ggbeeswarm')"
-

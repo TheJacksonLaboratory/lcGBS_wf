@@ -18,7 +18,7 @@ jobs:
 
     # Build Tools
     - name: Build and Publish
-      uses: elgohr/Publish-Docker-Github-Action@v4
+      uses: elgohr/Publish-Docker-Github-Action@v5
       with:
         name: sjwidmay/lcGBS_HR
         username: ${{ secrets.SJW_DOCKER_USER }}

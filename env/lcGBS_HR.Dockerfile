@@ -1,4 +1,24 @@
 FROM rocker/r-ver:4.2
+
+RUN  apt-get --allow-releaseinfo-change update \
+    && apt-get install -y procps \
+    ssh \
+    bash \
+    pkg-config \
+    libglpk-dev \
+    libz-dev \
+    tk \
+    libxml2 \
+    libxml2-dev \
+    libbz2-dev \
+    liblzma-dev \
+    xterm \
+    x11-utils \
+    libcairo2-dev \
+    libblas-dev \
+    libssh2-1-dev \
+    libgit2-dev
+
 RUN R -e "install.packages('parallel', repos='http://cran.us.r-project.org')"
 RUN R -e "install.packages('data.table', repos='http://cran.us.r-project.org')"
 RUN R -e "install.packages('vroom', repos='http://cran.us.r-project.org')"
@@ -19,3 +39,5 @@ RUN R -e "install.packages('magrittr')"
 RUN R -e "install.packages('ggplot2')"
 RUN R -e "install.packages('ggbeeswarm')"
 RUN R -e "install.packages('lsa')"
+RUN R -e "install.packages('cowplot')"
+RUN R -e "install.packages('tictoc')"

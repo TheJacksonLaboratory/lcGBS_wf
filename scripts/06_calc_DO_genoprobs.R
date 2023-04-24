@@ -16,15 +16,11 @@ gm_meta_build39 <- read.csv("data/gm_uwisc_v2.csv")
 load("data/DO_cross.RData")
 
 #####
-# Insert pseudomarkers
-#####
-map <- qtl2::insert_pseudomarkers(DO_cross$gmap, step = 1)
-save(map, file = "data/DO_map.RData")
-
-#####
 # Calculate genotype probabilities
 #####
-pr <- calc_genoprob(DO_cross, map, error_prob=0.002, cores = parallel::detectCores())
+pr <- calc_genoprob(DO_cross, 
+                    error_prob=0.002, 
+                    cores = (parallel::detectCores()/2))
 
 #####
 # Convert geno probs to allele probs

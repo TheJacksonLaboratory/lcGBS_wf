@@ -30,7 +30,7 @@ cc_ena_bams$strain = gsub("^ftp.sra.ebi.ac.uk/vol1/run/ERR\\d{3}/ERR\\d+/(.*)_(.
 
 # Download some files randomly (to test stitch-nf)
 dir.create("/fastscratch/widmas/")
-for(i in sample(1:nrow(cc_ena_files), size = 20, replace = F)){
+for(i in sample(1:nrow(cc_ena_files), size = 3, replace = F)){
   fastqs = unlist(strsplit(cc_ena_files[i,"submitted_ftp"], ";"))
   fastqs_stripped = gsub("ftp.sra.ebi.ac.uk/vol1/run/ERR191/ERR\\d+/(.*\\.fastq.gz)$","\\1",fastqs)
   for(j in 1:length(fastqs)){

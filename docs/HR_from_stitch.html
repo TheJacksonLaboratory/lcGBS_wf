@@ -1,0 +1,2812 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+
+
+
+<title>Haplotype Reconstruction with STITCH-Imputed Genotypes</title>
+
+<script src="site_libs/header-attrs-2.18/header-attrs.js"></script>
+<script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/flatly.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<style>h1 {font-size: 34px;}
+       h1.title {font-size: 38px;}
+       h2 {font-size: 30px;}
+       h3 {font-size: 24px;}
+       h4 {font-size: 18px;}
+       h5 {font-size: 16px;}
+       h6 {font-size: 12px;}
+       code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
+       pre:not([class]) { background-color: white }</style>
+<script src="site_libs/jqueryui-1.11.4/jquery-ui.min.js"></script>
+<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<script src="site_libs/navigation-1.1/codefolding.js"></script>
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+<script src="site_libs/htmlwidgets-1.5.4/htmlwidgets.js"></script>
+<script src="site_libs/plotly-binding-4.10.1/plotly.js"></script>
+<script src="site_libs/typedarray-0.1/typedarray.min.js"></script>
+<link href="site_libs/crosstalk-1.2.0/css/crosstalk.min.css" rel="stylesheet" />
+<script src="site_libs/crosstalk-1.2.0/js/crosstalk.min.js"></script>
+<link href="site_libs/plotly-htmlwidgets-css-2.11.1/plotly-htmlwidgets.css" rel="stylesheet" />
+<script src="site_libs/plotly-main-2.11.1/plotly-latest.min.js"></script>
+
+<link rel="icon" href="https://github.com/workflowr/workflowr-assets/raw/main/img/reproducible.png">
+<!-- Add a small amount of space between sections. -->
+<style type="text/css">
+div.section {
+  padding-top: 12px;
+}
+</style>
+
+
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+<style type="text/css">code{white-space: pre;}</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+
+
+
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+img {
+  max-width:100%;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+details > summary > p:only-child {
+  display: inline;
+}
+pre code {
+  padding: 0;
+}
+</style>
+
+
+<style type="text/css">
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #adb5bd;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script type="text/javascript">
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark the anchor link active (and if it's in a dropdown, also mark that active)
+  var dropdown = menuAnchor.closest('li.dropdown');
+  if (window.bootstrap) { // Bootstrap 4+
+    menuAnchor.addClass('active');
+    dropdown.find('> .dropdown-toggle').addClass('active');
+  } else { // Bootstrap 3
+    menuAnchor.parent().addClass('active');
+    dropdown.addClass('active');
+  }
+
+  // Navbar adjustments
+  var navHeight = $(".navbar").first().height() + 15;
+  var style = document.createElement('style');
+  var pt = "padding-top: " + navHeight + "px; ";
+  var mt = "margin-top: -" + navHeight + "px; ";
+  var css = "";
+  // offset scroll position for anchor links (for fixed navbar)
+  for (var i = 1; i <= 6; i++) {
+    css += ".section h" + i + "{ " + pt + mt + "}\n";
+  }
+  style.innerHTML = "body {" + pt + "padding-bottom: 40px; }\n" + css;
+  document.head.appendChild(style);
+});
+</script>
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before, .tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "\e259";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "\e258";
+  font-family: 'Glyphicons Halflings';
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+  background-color: transparent;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<!-- code folding -->
+<style type="text/css">
+.code-folding-btn { margin-bottom: 4px; }
+</style>
+
+
+
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+@media print {
+.toc-content {
+  /* see https://github.com/w3c/csswg-drafts/issues/4434 */
+  float: right;
+}
+}
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+
+</style>
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-bs-toggle="collapse" data-target="#navbar" data-bs-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">GBS SSIF Analyses</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+<li>
+  <a href="about.html">About</a>
+</li>
+<li>
+  <a href="license.html">License</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div id="header">
+
+<div class="btn-group pull-right float-right">
+<button type="button" class="btn btn-default btn-xs btn-secondary btn-sm dropdown-toggle" data-toggle="dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span>Code</span> <span class="caret"></span></button>
+<ul class="dropdown-menu dropdown-menu-right" style="min-width: 50px;">
+<li><a id="rmd-show-all-code" href="#">Show All Code</a></li>
+<li><a id="rmd-hide-all-code" href="#">Hide All Code</a></li>
+</ul>
+</div>
+
+
+
+<h1 class="title toc-ignore">Haplotype Reconstruction with
+STITCH-Imputed Genotypes</h1>
+
+</div>
+
+
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-report" data-toggle="collapse" data-target="#workflowr-report">
+<span class="glyphicon glyphicon-list" aria-hidden="true"></span>
+workflowr <span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span>
+</button>
+</p>
+<div id="workflowr-report" class="collapse">
+<ul class="nav nav-tabs">
+<li class="active">
+<a data-toggle="tab" href="#summary">Summary</a>
+</li>
+<li>
+<a data-toggle="tab" href="#checks"> Checks <span
+class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span>
+</a>
+</li>
+<li>
+<a data-toggle="tab" href="#versions">Past versions</a>
+</li>
+</ul>
+<div class="tab-content">
+<div id="summary" class="tab-pane fade in active">
+<p>
+<strong>Last updated:</strong> 2023-02-09
+</p>
+<p>
+<strong>Checks:</strong> <span
+class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 7
+<span class="glyphicon glyphicon-exclamation-sign text-danger"
+aria-hidden="true"></span> 0
+</p>
+<p>
+<strong>Knit directory:</strong> <code>lcGBS_wf/</code> <span
+class="glyphicon glyphicon-question-sign" aria-hidden="true"
+title="This is the local directory in which the code in this file was executed.">
+</span>
+</p>
+<p>
+This reproducible <a href="https://rmarkdown.rstudio.com">R Markdown</a>
+analysis was created with <a
+  href="https://github.com/workflowr/workflowr">workflowr</a> (version
+1.7.0). The <em>Checks</em> tab describes the reproducibility checks
+that were applied when the results were created. The <em>Past
+versions</em> tab lists the development history.
+</p>
+<hr>
+</div>
+<div id="checks" class="tab-pane fade">
+<div id="workflowr-checks" class="panel-group">
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRMarkdownfilestronguptodate">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>R Markdown file:</strong> up-to-date
+</a>
+</p>
+</div>
+<div id="strongRMarkdownfilestronguptodate"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great! Since the R Markdown file has been committed to the Git
+repository, you know the exact version of the code that produced these
+results.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongEnvironmentstrongempty">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Environment:</strong> empty </a>
+</p>
+</div>
+<div id="strongEnvironmentstrongempty" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! The global environment was empty. Objects defined in the
+global environment can affect the analysis in your R Markdown file in
+unknown ways. For reproduciblity it’s best to always run the code in an
+empty environment.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSeedstrongcodesetseed20230208code">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Seed:</strong>
+<code>set.seed(20230208)</code> </a>
+</p>
+</div>
+<div id="strongSeedstrongcodesetseed20230208code"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>The command <code>set.seed(20230208)</code> was run prior to running
+the code in the R Markdown file. Setting a seed ensures that any results
+that rely on randomness, e.g. subsampling or permutations, are
+reproducible.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSessioninformationstrongrecorded">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Session information:</strong>
+recorded </a>
+</p>
+</div>
+<div id="strongSessioninformationstrongrecorded"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! Recording the operating system, R version, and package
+versions is critical for reproducibility.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongCachestrongnone">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Cache:</strong> none </a>
+</p>
+</div>
+<div id="strongCachestrongnone" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Nice! There were no cached chunks for this analysis, so you can be
+confident that you successfully produced the results during this
+run.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongFilepathsstrongrelative">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>File paths:</strong> relative </a>
+</p>
+</div>
+<div id="strongFilepathsstrongrelative" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! Using relative paths to the files within your workflowr
+project makes it easier to run your code on other machines.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomTheJacksonLaboratorylcGBSwftreec4675d8de0b7e9ae4d6eb56a3981fffe2286d057targetblankc4675d8a">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Repository version:</strong>
+<a href="https://github.com/TheJacksonLaboratory/lcGBS_wf/tree/c4675d8de0b7e9ae4d6eb56a3981fffe2286d057" target="_blank">c4675d8</a>
+</a>
+</p>
+</div>
+<div
+id="strongRepositoryversionstrongahrefhttpsgithubcomTheJacksonLaboratorylcGBSwftreec4675d8de0b7e9ae4d6eb56a3981fffe2286d057targetblankc4675d8a"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>
+Great! You are using Git for version control. Tracking code development
+and connecting the code version to the results is critical for
+reproducibility.
+</p>
+<p>
+The results in this page were generated with repository version
+<a href="https://github.com/TheJacksonLaboratory/lcGBS_wf/tree/c4675d8de0b7e9ae4d6eb56a3981fffe2286d057" target="_blank">c4675d8</a>.
+See the <em>Past versions</em> tab to see a history of the changes made
+to the R Markdown and HTML files.
+</p>
+<p>
+Note that you need to be careful to ensure that all relevant files for
+the analysis have been committed to Git prior to generating the results
+(you can use <code>wflow_publish</code> or
+<code>wflow_git_commit</code>). workflowr only checks the R Markdown
+file, but you know if there are other scripts or data files that it
+depends on. Below is the status of the Git repository when the results
+were generated:
+</p>
+<pre><code>
+Ignored files:
+    Ignored:    .Rhistory
+    Ignored:    .Rproj.user/
+
+Untracked files:
+    Untracked:  .DS_Store
+    Untracked:  Rplot001.png
+    Untracked:  data/.DS_Store
+    Untracked:  data/4Founders.deepVar.vcf.gz
+    Untracked:  data/4Founders.deepVar.vcf.gz.tbi
+    Untracked:  data/4WC_cross.RData
+    Untracked:  data/4WC_genoprobs.RData
+    Untracked:  data/4WC_maxmarg.RData
+    Untracked:  data/DO_cross.RData
+    Untracked:  data/DO_genoprobs.RData
+    Untracked:  data/DO_maxmarg.RData
+    Untracked:  data/Plate_Layouts.xlsx
+    Untracked:  data/STITCH_data/
+    Untracked:  data/Sample_information.xlsx
+    Untracked:  data/gm_uwisc_v1.csv
+    Untracked:  data/neogen/
+    Untracked:  figures/
+    Untracked:  output/.DS_Store
+    Untracked:  output/plot_onegeno_ddRADseq.1301_GT23.00313_GGTTG.GCCAAT_S30.png
+    Untracked:  output/plot_onegeno_ddRADseq.1314_GT23.00337_AAGGA.ACTTGA_S95.png
+    Untracked:  output/plot_onegeno_ddRADseq.1320_GT23.00297_TCGAT.ACAGTG_S78.png
+    Untracked:  output/plot_onegeno_ddRADseq.1328_GT23.00329_AGCTA.CAGATC_S3.png
+    Untracked:  output/plot_onegeno_ddRADseq.1339_GT23.00321_ACTTC.CAGATC_S42.png
+    Untracked:  output/plot_onegeno_ddRADseq.1342_GT23.00305_AACCA.ACAGTG_S71.png
+    Untracked:  output/plot_onegeno_ddRADseq.4990.1_GT23.00314_ACGGT.GCCAAT_S48.png
+    Untracked:  output/plot_onegeno_ddRADseq.4990.2_GT23.00315_AAGGA.GCCAAT_S39.png
+    Untracked:  output/plot_onegeno_ddRADseq.4990.3_GT23.00316_AACCA.GCCAAT_S85.png
+    Untracked:  output/plot_onegeno_ddRADseq.4990.4_GT23.00317_ACACA.GCCAAT_S27.png
+    Untracked:  output/plot_onegeno_ddRADseq.4990.5_GT23.00318_AGCTA.GCCAAT_S29.png
+    Untracked:  output/plot_onegeno_ddRADseq.4990.6_GT23.00319_CGATC.GCCAAT_S26.png
+    Untracked:  output/plot_onegeno_ddRADseq.4990.7_GT23.00320_TCGAT.GCCAAT_S50.png
+    Untracked:  output/plot_onegeno_ddRADseq.4991.1_GT23.00322_CAACC.CAGATC_S24.png
+    Untracked:  output/plot_onegeno_ddRADseq.4991.2_GT23.00323_ATACG.CAGATC_S33.png
+    Untracked:  output/plot_onegeno_ddRADseq.4991.3_GT23.00324_GGTTG.CAGATC_S75.png
+    Untracked:  output/plot_onegeno_ddRADseq.4991.4_GT23.00325_ACGGT.CAGATC_S59.png
+    Untracked:  output/plot_onegeno_ddRADseq.4991.5_GT23.00326_AAGGA.CAGATC_S84.png
+    Untracked:  output/plot_onegeno_ddRADseq.4991.6_GT23.00327_AACCA.CAGATC_S53.png
+    Untracked:  output/plot_onegeno_ddRADseq.4991.7_GT23.00328_ACACA.CAGATC_S87.png
+    Untracked:  output/plot_onegeno_ddRADseq.5040.1_GT23.00298_GCATG.ACAGTG_S38.png
+    Untracked:  output/plot_onegeno_ddRADseq.5040.2_GT23.00299_ACTTC.ACAGTG_S73.png
+    Untracked:  output/plot_onegeno_ddRADseq.5040.3_GT23.00300_CAACC.ACAGTG_S61.png
+    Untracked:  output/plot_onegeno_ddRADseq.5040.4_GT23.00301_ATACG.ACAGTG_S54.png
+    Untracked:  output/plot_onegeno_ddRADseq.5040.5_GT23.00302_GGTTG.ACAGTG_S92.png
+    Untracked:  output/plot_onegeno_ddRADseq.5040.6_GT23.00303_ACGGT.ACAGTG_S68.png
+    Untracked:  output/plot_onegeno_ddRADseq.5040.7_GT23.00304_AAGGA.ACAGTG_S63.png
+    Untracked:  output/plot_onegeno_ddRADseq.5041.1_GT23.00306_ACACA.ACAGTG_S65.png
+    Untracked:  output/plot_onegeno_ddRADseq.5041.2_GT23.00307_AGCTA.ACAGTG_S56.png
+    Untracked:  output/plot_onegeno_ddRADseq.5041.3_GT23.00308_CGATC.ACAGTG_S32.png
+    Untracked:  output/plot_onegeno_ddRADseq.5041.4_GT23.00309_GCATG.GCCAAT_S18.png
+    Untracked:  output/plot_onegeno_ddRADseq.5041.5_GT23.00310_ACTTC.GCCAAT_S57.png
+    Untracked:  output/plot_onegeno_ddRADseq.5041.6_GT23.00311_CAACC.GCCAAT_S79.png
+    Untracked:  output/plot_onegeno_ddRADseq.5041.7_GT23.00312_ATACG.GCCAAT_S36.png
+    Untracked:  output/plot_onegeno_ddRADseq.5060.1_GT23.00330_CGATC.CAGATC_S55.png
+    Untracked:  output/plot_onegeno_ddRADseq.5060.2_GT23.00331_TCGAT.CAGATC_S70.png
+    Untracked:  output/plot_onegeno_ddRADseq.5060.3_GT23.00332_GCATG.CAGATC_S89.png
+    Untracked:  output/plot_onegeno_ddRADseq.5060.4_GT23.00333_CAACC.ACTTGA_S16.png
+    Untracked:  output/plot_onegeno_ddRADseq.5060.5_GT23.00334_ATACG.ACTTGA_S46.png
+    Untracked:  output/plot_onegeno_ddRADseq.5060.6_GT23.00335_GGTTG.ACTTGA_S37.png
+    Untracked:  output/plot_onegeno_ddRADseq.5060.7_GT23.00336_ACGGT.ACTTGA_S76.png
+    Untracked:  output/plot_onegeno_ddRADseq.5061.1_GT23.00338_AACCA.ACTTGA_S7.png
+    Untracked:  output/plot_onegeno_ddRADseq.5061.2_GT23.00339_ACACA.ACTTGA_S14.png
+    Untracked:  output/plot_onegeno_ddRADseq.5061.3_GT23.00340_AGCTA.ACTTGA_S91.png
+    Untracked:  output/plot_onegeno_ddRADseq.5061.4_GT23.00341_CGATC.ACTTGA_S81.png
+    Untracked:  output/plot_onegeno_ddRADseq.5061.5_GT23.00342_TCGAT.ACTTGA_S58.png
+    Untracked:  output/plot_onegeno_ddRADseq.5061.6_GT23.00343_GCATG.ACTTGA_S12.png
+    Untracked:  output/plot_onegeno_ddRADseq.5061.7_GT23.00344_ACTTC.ACTTGA_S13.png
+    Untracked:  output/plot_onegeno_ddRADseq.F02_GT23.00249_ACACA.ATCACG_S1.png
+    Untracked:  output/plot_onegeno_ddRADseq.F03_GT23.00250_AGCTA.ATCACG_S67.png
+    Untracked:  output/plot_onegeno_ddRADseq.F04_GT23.00251_CGATC.ATCACG_S9.png
+    Untracked:  output/plot_onegeno_ddRADseq.F07_GT23.00252_TCGAT.ATCACG_S64.png
+    Untracked:  output/plot_onegeno_ddRADseq.F08_GT23.00253_GCATG.ATCACG_S22.png
+    Untracked:  output/plot_onegeno_ddRADseq.F10_GT23.00254_ACTTC.ATCACG_S66.png
+    Untracked:  output/plot_onegeno_ddRADseq.F12_GT23.00255_CAACC.ATCACG_S20.png
+    Untracked:  output/plot_onegeno_ddRADseq.F14_GT23.00256_ATACG.ATCACG_S6.png
+    Untracked:  output/plot_onegeno_ddRADseq.F15_GT23.00257_GGTTG.ATCACG_S90.png
+    Untracked:  output/plot_onegeno_ddRADseq.F17_GT23.00258_ACGGT.ATCACG_S45.png
+    Untracked:  output/plot_onegeno_ddRADseq.F19_GT23.00259_AAGGA.ATCACG_S41.png
+    Untracked:  output/plot_onegeno_ddRADseq.F23_GT23.00260_AACCA.ATCACG_S11.png
+    Untracked:  output/plot_onegeno_ddRADseq.F24_GT23.00261_ACACA.CGATGT_S44.png
+    Untracked:  output/plot_onegeno_ddRADseq.F26_GT23.00262_AGCTA.CGATGT_S43.png
+    Untracked:  output/plot_onegeno_ddRADseq.F28_GT23.00263_CGATC.CGATGT_S62.png
+    Untracked:  output/plot_onegeno_ddRADseq.F29_GT23.00264_TCGAT.CGATGT_S52.png
+    Untracked:  output/plot_onegeno_ddRADseq.F31_GT23.00265_GCATG.CGATGT_S28.png
+    Untracked:  output/plot_onegeno_ddRADseq.F32_GT23.00266_ACTTC.CGATGT_S5.png
+    Untracked:  output/plot_onegeno_ddRADseq.F33_GT23.00267_CAACC.CGATGT_S10.png
+    Untracked:  output/plot_onegeno_ddRADseq.F36_GT23.00268_ATACG.CGATGT_S94.png
+    Untracked:  output/plot_onegeno_ddRADseq.F37_GT23.00269_GGTTG.CGATGT_S72.png
+    Untracked:  output/plot_onegeno_ddRADseq.F39_GT23.00270_ACGGT.CGATGT_S34.png
+    Untracked:  output/plot_onegeno_ddRADseq.F40_GT23.00271_AAGGA.CGATGT_S77.png
+    Untracked:  output/plot_onegeno_ddRADseq.F55_GT23.00272_AACCA.CGATGT_S35.png
+    Untracked:  output/plot_onegeno_ddRADseq.M03_GT23.00273_AGCTA.TTAGGC_S74.png
+    Untracked:  output/plot_onegeno_ddRADseq.M04_GT23.00274_CGATC.TTAGGC_S93.png
+    Untracked:  output/plot_onegeno_ddRADseq.M11_GT23.00275_TCGAT.TTAGGC_S80.png
+    Untracked:  output/plot_onegeno_ddRADseq.M14_GT23.00276_GCATG.TTAGGC_S96.png
+    Untracked:  output/plot_onegeno_ddRADseq.M15_GT23.00277_ACTTC.TTAGGC_S23.png
+    Untracked:  output/plot_onegeno_ddRADseq.M16_GT23.00278_CAACC.TTAGGC_S8.png
+    Untracked:  output/plot_onegeno_ddRADseq.M17_GT23.00279_ATACG.TTAGGC_S88.png
+    Untracked:  output/plot_onegeno_ddRADseq.M19_GT23.00280_GGTTG.TTAGGC_S82.png
+    Untracked:  output/plot_onegeno_ddRADseq.M20_GT23.00281_ACGGT.TTAGGC_S15.png
+    Untracked:  output/plot_onegeno_ddRADseq.M21_GT23.00282_AAGGA.TTAGGC_S83.png
+    Untracked:  output/plot_onegeno_ddRADseq.M23_GT23.00283_AACCA.TTAGGC_S31.png
+    Untracked:  output/plot_onegeno_ddRADseq.M24_GT23.00284_ACACA.TTAGGC_S17.png
+    Untracked:  output/plot_onegeno_ddRADseq.M25_GT23.00285_CGATC.TGACCA_S51.png
+    Untracked:  output/plot_onegeno_ddRADseq.M26_GT23.00286_TCGAT.TGACCA_S47.png
+    Untracked:  output/plot_onegeno_ddRADseq.M28_GT23.00287_GCATG.TGACCA_S69.png
+    Untracked:  output/plot_onegeno_ddRADseq.M29_GT23.00288_ACTTC.TGACCA_S21.png
+    Untracked:  output/plot_onegeno_ddRADseq.M30_GT23.00289_CAACC.TGACCA_S60.png
+    Untracked:  output/plot_onegeno_ddRADseq.M32_GT23.00290_ATACG.TGACCA_S4.png
+    Untracked:  output/plot_onegeno_ddRADseq.M34_GT23.00291_GGTTG.TGACCA_S86.png
+    Untracked:  output/plot_onegeno_ddRADseq.M35_GT23.00292_ACGGT.TGACCA_S40.png
+    Untracked:  output/plot_onegeno_ddRADseq.M38_GT23.00293_AAGGA.TGACCA_S19.png
+    Untracked:  output/plot_onegeno_ddRADseq.M39_GT23.00294_AACCA.TGACCA_S2.png
+    Untracked:  output/plot_onegeno_ddRADseq.M45_GT23.00295_ACACA.TGACCA_S25.png
+    Untracked:  output/plot_onegeno_ddRADseq.M58_GT23.00296_AGCTA.TGACCA_S49.png
+    Untracked:  plots/.DS_Store
+    Untracked:  plots/plot_onegeno_ddRADseq.5041.3_GT23.00308_CGATC.ACAGTG_S32.png
+    Untracked:  results/
+
+Unstaged changes:
+    Deleted:    .github/workflows/build_docker.yml
+    Deleted:    code/README.md
+    Modified:   data/4WC_covar.csv
+    Deleted:    data/DO4WC_covar.csv
+    Deleted:    data/DO4WC_forqtl2.json
+    Deleted:    env/DO4WC_HR.Dockerfile
+    Deleted:    env/DO_4WC.yml
+
+</code></pre>
+<p>
+Note that any generated files, e.g. HTML, png, CSS, etc., are not
+included in this status report because it is ok for generated content to
+have uncommitted changes.
+</p>
+</div>
+</div>
+</div>
+</div>
+<hr>
+</div>
+<div id="versions" class="tab-pane fade">
+
+<p>
+These are the previous versions of the repository in which changes were
+made to the R Markdown (<code>analysis/HR_from_stitch.Rmd</code>) and
+HTML (<code>docs/HR_from_stitch.html</code>) files. If you’ve configured
+a remote Git repository (see <code>?wflow_git_remote</code>), click on
+the hyperlinks in the table below to view the files as they were in that
+past version.
+</p>
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+File
+</th>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+<th>
+Message
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/TheJacksonLaboratory/lcGBS_wf/blob/c4675d8de0b7e9ae4d6eb56a3981fffe2286d057/analysis/HR_from_stitch.Rmd" target="_blank">c4675d8</a>
+</td>
+<td>
+sam-widmayer
+</td>
+<td>
+2023-02-09
+</td>
+<td>
+add xo correlation plots
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/TheJacksonLaboratory/lcGBS_wf/1c5224683b9dded98bcee7fb0506cd459d0ca8ed/docs/HR_from_stitch.html" target="_blank">1c52246</a>
+</td>
+<td>
+sam-widmayer
+</td>
+<td>
+2023-02-09
+</td>
+<td>
+Build site.
+</td>
+</tr>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/TheJacksonLaboratory/lcGBS_wf/blob/00e5fe47f682980581c213af4cf074cf3fabe355/analysis/HR_from_stitch.Rmd" target="_blank">00e5fe4</a>
+</td>
+<td>
+sam-widmayer
+</td>
+<td>
+2023-02-09
+</td>
+<td>
+add xo correlation plots
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/TheJacksonLaboratory/lcGBS_wf/5fc09b392a830f5ab13b3923286024552d0d6b17/docs/HR_from_stitch.html" target="_blank">5fc09b3</a>
+</td>
+<td>
+sam-widmayer
+</td>
+<td>
+2023-02-09
+</td>
+<td>
+Build site.
+</td>
+</tr>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/TheJacksonLaboratory/lcGBS_wf/blob/2e6260c874797988537db2f846ad1340c180df49/analysis/HR_from_stitch.Rmd" target="_blank">2e6260c</a>
+</td>
+<td>
+sam-widmayer
+</td>
+<td>
+2023-02-09
+</td>
+<td>
+add xo correlation plots
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/TheJacksonLaboratory/lcGBS_wf/aac660eaf470373a4003e3f090259a97e1e83227/docs/HR_from_stitch.html" target="_blank">aac660e</a>
+</td>
+<td>
+sam-widmayer
+</td>
+<td>
+2023-02-09
+</td>
+<td>
+Build site.
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/TheJacksonLaboratory/lcGBS_wf/18aadff4644ce0270df495c357f1c36d6773ca0e/docs/HR_from_stitch.html" target="_blank">18aadff</a>
+</td>
+<td>
+sam-widmayer
+</td>
+<td>
+2023-02-09
+</td>
+<td>
+Build site.
+</td>
+</tr>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/TheJacksonLaboratory/lcGBS_wf/blob/249f729a710505933341134666bfda729bc0aaf7/analysis/HR_from_stitch.Rmd" target="_blank">249f729</a>
+</td>
+<td>
+sam-widmayer
+</td>
+<td>
+2023-02-09
+</td>
+<td>
+add DO ddRADseq haplotype plots and diagnostics
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/TheJacksonLaboratory/lcGBS_wf/578d8eaded011225b8293e66d0d5d9841d56c2f7/docs/HR_from_stitch.html" target="_blank">578d8ea</a>
+</td>
+<td>
+sam-widmayer
+</td>
+<td>
+2023-02-09
+</td>
+<td>
+Build site.
+</td>
+</tr>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/TheJacksonLaboratory/lcGBS_wf/blob/d0fe61095f7d5ae45302716ec2e4b0ca8fa576ae/analysis/HR_from_stitch.Rmd" target="_blank">d0fe610</a>
+</td>
+<td>
+sam-widmayer
+</td>
+<td>
+2023-02-09
+</td>
+<td>
+update markdown with example haplotype plots for GM and ddRADseq sample
+comps
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/TheJacksonLaboratory/lcGBS_wf/84162cd7a551adfdc8cc802e878e560dbd0fd3cf/docs/HR_from_stitch.html" target="_blank">84162cd</a>
+</td>
+<td>
+sam-widmayer
+</td>
+<td>
+2023-02-08
+</td>
+<td>
+render committed HR 4WC markdown
+</td>
+</tr>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/TheJacksonLaboratory/lcGBS_wf/blob/7eb061783b6ca3de42a72aa7c5e911be9b4ff76d/analysis/HR_from_stitch.Rmd" target="_blank">7eb0617</a>
+</td>
+<td>
+sam-widmayer
+</td>
+<td>
+2023-02-08
+</td>
+<td>
+initiate workflowr site, starting with ddRADseq 4WC HR
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<hr>
+</div>
+</div>
+</div>
+<div id="overview" class="section level1">
+<h1>Overview</h1>
+<p>The goal of this preliminary analysis was to determine whether
+STITCH: 1) could provide us useful information and 2) whether this
+information could be translated or retrofitted for haplotype
+reconstruction in multiparent crosses</p>
+<p>We built a Nextflow pipeline, <a
+href="https://github.com/TheJacksonLaboratory/stitch-nf">stitch-nf</a>,
+from the foundation of the NGS OPS WGS pipeline that runs STITCH on
+mouse samples that were submitted for low-coverage WGS. At the end of
+this pipeline, we extract 1) imputed sample genotypes and 2) prior
+probabilities for ancestral genotypes of latent haplotypes used for
+genotype imputation. These data can be conceptualized as “founder
+genotypes”</p>
+</div>
+<div id="four-way-cross-ddradseq-test-samples" class="section level1">
+<h1>Four-way Cross ddRADseq Test Samples</h1>
+<div id="writing-control-file" class="section level2">
+<h2>Writing control file</h2>
+<pre class="r"><code># Establish chromosome vector
+chr &lt;- c(1:19)
+
+# read in covariate file
+metadata &lt;- readr::read_csv(file = &quot;data/4WC_covar.csv&quot;, 
+                            col_types = c(sample = &quot;c&quot;,
+                                          generation = &quot;n&quot;,
+                                          Sex = &quot;c&quot;), 
+                            show_col_types = T)</code></pre>
+<pre><code>Warning: The following named parsers don&#39;t match the column names: sample,
+generation</code></pre>
+<pre><code>Rows: 48 Columns: 7
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: &quot;,&quot;
+chr (2): SampleID, Sex
+dbl (5): Generation, A, B, C, D
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
+<pre class="r"><code># match sample names to what is encoded in genotype files
+geno_header &lt;- c(as.character(readr::read_csv(file = &quot;data/STITCH_data/4WC_ddRADseq/geno1.csv&quot;, 
+                                              col_names = F, skip = 3, n_max = 1)))[-1]</code></pre>
+<pre><code>Rows: 1 Columns: 49
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: &quot;,&quot;
+chr (49): X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, ...
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
+<pre class="r"><code>new_sampleID &lt;- c()
+for(i in 1:length(metadata$SampleID)){
+  sample_index &lt;- grep(geno_header, pattern = gsub(metadata$SampleID[i], 
+                                                   pattern = &quot;-&quot;,
+                                                   replacement = &quot;.&quot;))
+  new_sampleID[i] &lt;- geno_header[sample_index]
+}
+
+# Write updated metadata file
+updated_4WC_metadata &lt;- metadata %&gt;%
+  dplyr::mutate(newSampID = new_sampleID) %&gt;%
+  dplyr::select(-SampleID,-Sex) %&gt;%
+  dplyr::select(newSampID, everything()) %&gt;%
+  dplyr::rename(SampleID = newSampID)
+write.csv(updated_4WC_metadata, file = &quot;data/STITCH_data/4WC_ddRADseq/4WC_ddRADseq_crossinfo.csv&quot;, quote = F, row.names = F)
+
+# Write updated metadata file
+sex_4WC &lt;- metadata %&gt;%
+  dplyr::mutate(newSampID = new_sampleID) %&gt;%
+  dplyr::select(newSampID, Sex) %&gt;%
+  dplyr::rename(SampleID = newSampID) 
+write.csv(sex_4WC, file = &quot;data/STITCH_data/4WC_ddRADseq/sex_4WC.csv&quot;, quote = F, row.names = F)
+
+# Write control file
+qtl2::write_control_file(output_file = &quot;data/STITCH_data/4WC_ddRADseq/4WC_ddRADseq.json&quot;,
+                         crosstype=&quot;genail4&quot;,
+                         description=&quot;4WC_ddRADseq&quot;,
+                         founder_geno_file=paste0(&quot;foundergeno&quot;, chr, &quot;.csv&quot;), 
+                         founder_geno_transposed=TRUE,
+                         gmap_file=paste0(&quot;gmap&quot;, chr, &quot;.csv&quot;),
+                         pmap_file=paste0(&quot;pmap&quot;, chr, &quot;.csv&quot;),
+                         geno_file=paste0(&quot;geno&quot;, chr, &quot;.csv&quot;),
+                         geno_transposed = TRUE,
+                         geno_codes=list(A=1, H=2, B=3), 
+                         sex_file = &quot;sex_4WC.csv&quot;,
+                         sex_codes=list(F=&quot;Female&quot;, M=&quot;Male&quot;),
+                         # crossinfo_covar=c(&quot;Generation&quot;,&quot;A&quot;,&quot;B&quot;,&quot;C&quot;,&quot;D&quot;), 
+                         crossinfo_file = &quot;4WC_ddRADseq_crossinfo.csv&quot;,
+                         overwrite = T)</code></pre>
+<p>We load in the cross object, and determined the number of markers
+that are missing data in each sample. These data are from a small test
+run of ddRADseq libraries prepped by Lydia Wooldridge and the Dumont
+Lab.</p>
+</div>
+<div id="calculating-missing-genotypes" class="section level2">
+<h2>Calculating missing genotypes</h2>
+<pre class="r"><code># Load in the cross object
+ddRADseq_4WC &lt;- qtl2::read_cross2(&quot;data/STITCH_data/4WC_ddRADseq/4WC_ddRADseq.json&quot;)
+
+# Also loading in the cross object from GigaMUGA genotypes
+load(&quot;data/4WC_cross.RData&quot;)
+
+# Drop null markers
+ddRADseq_4WC &lt;- qtl2::drop_nullmarkers(ddRADseq_4WC)</code></pre>
+<pre><code>Dropping 62 markers with no data</code></pre>
+<pre class="r"><code># Reordering genotypes so that most common allele in founders is first
+for(chr in seq_along(ddRADseq_4WC$founder_geno)) {
+  fg &lt;- ddRADseq_4WC$founder_geno[[chr]]
+  g &lt;- ddRADseq_4WC$geno[[chr]]
+  f1 &lt;- colSums(fg==1)/colSums(fg != 0)
+  
+  fg[fg==0] &lt;- NA
+  g[g==0] &lt;- NA
+  
+  fg[,f1 &lt; 0.5] &lt;- 4 - fg[,f1 &lt; 0.5]
+  g[,f1 &lt; 0.5]  &lt;- 4 - g[,f1 &lt; 0.5]
+  
+  fg[is.na(fg)] &lt;- 0
+  g[is.na(g)] &lt;- 0
+  
+  ddRADseq_4WC$founder_geno[[chr]] &lt;- fg
+  ddRADseq_4WC$geno[[chr]] &lt;- g
+}
+
+# Calculate the percent of missing genotypes per sample
+percent_missing &lt;- qtl2::n_missing(ddRADseq_4WC, &quot;ind&quot;, &quot;prop&quot;)*100
+missing_genos_df &lt;- data.frame(names(percent_missing), percent_missing) %&gt;%
+  `colnames&lt;-`(c(&quot;sample&quot;,&quot;percent_missing&quot;))
+
+# Plot missing genotypes per sample
+missing_genos_plot &lt;- ggplot(data = missing_genos_df, mapping = aes(x = reorder(sample, percent_missing),
+                                                                    y = percent_missing)) +
+  theme_bw() +
+  geom_point(shape = 21) +
+  labs(title = &quot;4WC Missing Genotypes&quot;) +
+  theme(legend.position = &quot;bottom&quot;,
+        panel.grid = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank())
+plotly::ggplotly(missing_genos_plot)</code></pre>
+<div id="htmlwidget-6be44b994f0b06bfd583" style="width:672px;height:480px;" class="plotly html-widget"></div>
+<script type="application/json" data-for="htmlwidget-6be44b994f0b06bfd583">{"x":{"data":[{"x":[38,37,19,16,29,33,27,44,32,20,48,5,12,28,21,31,17,39,9,46,34,45,36,6,10,47,23,14,22,25,24,30,43,40,4,18,8,41,42,26,7,13,15,11,35,3,2,1],"y":[78.3872870476389,78.0958328996218,65.0359113146664,62.9922625863086,71.7948717948718,74.7406405051872,71.3368724194164,85.3925956767635,74.261822976302,65.8651677596197,95.2881579403907,55.5116061205371,62.5134450574234,71.7081294889143,66.2294854446411,73.4221574546338,64.2899274834322,78.5087262759793,60.3240692550571,90.4618160369175,74.8933069636723,89.0010756045939,76.8016376947365,56.5351653308352,61.4482495402658,93.268797057701,68.030255716318,62.7459144373894,66.9164845078242,70.0808438291524,69.855313833663,72.7178099302592,82.7035841920822,78.7863016550432,54.324971375039,64.7166996287429,59.6544186530655,80.3823600846605,82.155372818431,70.1294195204885,57.3609520835502,62.589778286666,62.7979598209639,61.7501127649977,75.7052149474342,49.5263870094723,49.522917317234,43.2358349814372],"text":["reorder(sample, percent_missing): ddRADseq.5041.3_GT23.00308_CGATC.ACAGTG_S32<br />percent_missing: 78.38729","reorder(sample, percent_missing): ddRADseq.4990.3_GT23.00316_AACCA.GCCAAT_S85<br />percent_missing: 78.09583","reorder(sample, percent_missing): ddRADseq.5041.5_GT23.00310_ACTTC.GCCAAT_S57<br />percent_missing: 65.03591","reorder(sample, percent_missing): ddRADseq.5040.5_GT23.00302_GGTTG.ACAGTG_S92<br />percent_missing: 62.99226","reorder(sample, percent_missing): ddRADseq.5040.3_GT23.00300_CAACC.ACAGTG_S61<br />percent_missing: 71.79487","reorder(sample, percent_missing): ddRADseq.5060.7_GT23.00336_ACGGT.ACTTGA_S76<br />percent_missing: 74.74064","reorder(sample, percent_missing): ddRADseq.4991.4_GT23.00325_ACGGT.CAGATC_S59<br />percent_missing: 71.33687","reorder(sample, percent_missing): ddRADseq.5061.6_GT23.00343_GCATG.ACTTGA_S12<br />percent_missing: 85.39260","reorder(sample, percent_missing): ddRADseq.5041.6_GT23.00311_CAACC.GCCAAT_S79<br />percent_missing: 74.26182","reorder(sample, percent_missing): ddRADseq.5060.6_GT23.00335_GGTTG.ACTTGA_S37<br />percent_missing: 65.86517","reorder(sample, percent_missing): ddRADseq.1339_GT23.00321_ACTTC.CAGATC_S42<br />percent_missing: 95.28816","reorder(sample, percent_missing): ddRADseq.5060.2_GT23.00331_TCGAT.CAGATC_S70<br />percent_missing: 55.51161","reorder(sample, percent_missing): ddRADseq.5060.1_GT23.00330_CGATC.CAGATC_S55<br />percent_missing: 62.51345","reorder(sample, percent_missing): ddRADseq.1301_GT23.00313_GGTTG.GCCAAT_S30<br />percent_missing: 71.70813","reorder(sample, percent_missing): ddRADseq.4991.3_GT23.00324_GGTTG.CAGATC_S75<br />percent_missing: 66.22949","reorder(sample, percent_missing): ddRADseq.5061.5_GT23.00342_TCGAT.ACTTGA_S58<br />percent_missing: 73.42216","reorder(sample, percent_missing): ddRADseq.4991.2_GT23.00323_ATACG.CAGATC_S33<br />percent_missing: 64.28993","reorder(sample, percent_missing): ddRADseq.5041.7_GT23.00312_ATACG.GCCAAT_S36<br />percent_missing: 78.50873","reorder(sample, percent_missing): ddRADseq.4991.5_GT23.00326_AAGGA.CAGATC_S84<br />percent_missing: 60.32407","reorder(sample, percent_missing): ddRADseq.1328_GT23.00329_AGCTA.CAGATC_S3<br />percent_missing: 90.46182","reorder(sample, percent_missing): ddRADseq.5040.1_GT23.00298_GCATG.ACAGTG_S38<br />percent_missing: 74.89331","reorder(sample, percent_missing): ddRADseq.1320_GT23.00297_TCGAT.ACAGTG_S78<br />percent_missing: 89.00108","reorder(sample, percent_missing): ddRADseq.5060.4_GT23.00333_CAACC.ACTTGA_S16<br />percent_missing: 76.80164","reorder(sample, percent_missing): ddRADseq.4990.6_GT23.00319_CGATC.GCCAAT_S26<br />percent_missing: 56.53517","reorder(sample, percent_missing): ddRADseq.1314_GT23.00337_AAGGA.ACTTGA_S95<br />percent_missing: 61.44825","reorder(sample, percent_missing): ddRADseq.5061.7_GT23.00344_ACTTC.ACTTGA_S13<br />percent_missing: 93.26880","reorder(sample, percent_missing): ddRADseq.5061.1_GT23.00338_AACCA.ACTTGA_S7<br />percent_missing: 68.03026","reorder(sample, percent_missing): ddRADseq.5061.2_GT23.00339_ACACA.ACTTGA_S14<br />percent_missing: 62.74591","reorder(sample, percent_missing): ddRADseq.4990.1_GT23.00314_ACGGT.GCCAAT_S48<br />percent_missing: 66.91648","reorder(sample, percent_missing): ddRADseq.5060.3_GT23.00332_GCATG.CAGATC_S89<br />percent_missing: 70.08084","reorder(sample, percent_missing): ddRADseq.5040.6_GT23.00303_ACGGT.ACAGTG_S68<br />percent_missing: 69.85531","reorder(sample, percent_missing): ddRADseq.5061.4_GT23.00341_CGATC.ACTTGA_S81<br />percent_missing: 72.71781","reorder(sample, percent_missing): ddRADseq.4990.4_GT23.00317_ACACA.GCCAAT_S27<br />percent_missing: 82.70358","reorder(sample, percent_missing): ddRADseq.4990.2_GT23.00315_AAGGA.GCCAAT_S39<br />percent_missing: 78.78630","reorder(sample, percent_missing): ddRADseq.5040.7_GT23.00304_AAGGA.ACAGTG_S63<br />percent_missing: 54.32497","reorder(sample, percent_missing): ddRADseq.5040.4_GT23.00301_ATACG.ACAGTG_S54<br />percent_missing: 64.71670","reorder(sample, percent_missing): ddRADseq.5041.1_GT23.00306_ACACA.ACAGTG_S65<br />percent_missing: 59.65442","reorder(sample, percent_missing): ddRADseq.1342_GT23.00305_AACCA.ACAGTG_S71<br />percent_missing: 80.38236","reorder(sample, percent_missing): ddRADseq.4991.7_GT23.00328_ACACA.CAGATC_S87<br />percent_missing: 82.15537","reorder(sample, percent_missing): ddRADseq.5060.5_GT23.00334_ATACG.ACTTGA_S46<br />percent_missing: 70.12942","reorder(sample, percent_missing): ddRADseq.4991.1_GT23.00322_CAACC.CAGATC_S24<br />percent_missing: 57.36095","reorder(sample, percent_missing): ddRADseq.5061.3_GT23.00340_AGCTA.ACTTGA_S91<br />percent_missing: 62.58978","reorder(sample, percent_missing): ddRADseq.5040.2_GT23.00299_ACTTC.ACAGTG_S73<br />percent_missing: 62.79796","reorder(sample, percent_missing): ddRADseq.4991.6_GT23.00327_AACCA.CAGATC_S53<br />percent_missing: 61.75011","reorder(sample, percent_missing): ddRADseq.5041.4_GT23.00309_GCATG.GCCAAT_S18<br />percent_missing: 75.70521","reorder(sample, percent_missing): ddRADseq.4990.5_GT23.00318_AGCTA.GCCAAT_S29<br />percent_missing: 49.52639","reorder(sample, percent_missing): ddRADseq.4990.7_GT23.00320_TCGAT.GCCAAT_S50<br />percent_missing: 49.52292","reorder(sample, percent_missing): ddRADseq.5041.2_GT23.00307_AGCTA.ACAGTG_S56<br />percent_missing: 43.23583"],"type":"scatter","mode":"markers","marker":{"autocolorscale":false,"color":"transparent","opacity":1,"size":5.66929133858268,"symbol":"circle","line":{"width":1.88976377952756,"color":"rgba(0,0,0,1)"}},"hoveron":"points","showlegend":false,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null}],"layout":{"margin":{"t":43.7625570776256,"r":7.30593607305936,"b":28.4931506849315,"l":37.2602739726027},"plot_bgcolor":"rgba(255,255,255,1)","paper_bgcolor":"rgba(255,255,255,1)","font":{"color":"rgba(0,0,0,1)","family":"","size":14.6118721461187},"title":{"text":"4WC Missing Genotypes","font":{"color":"rgba(0,0,0,1)","family":"","size":17.5342465753425},"x":0,"xref":"paper"},"xaxis":{"domain":[0,1],"automargin":true,"type":"linear","autorange":false,"range":[0.4,48.6],"tickmode":"array","ticktext":["ddRADseq.5041.2_GT23.00307_AGCTA.ACAGTG_S56","ddRADseq.4990.7_GT23.00320_TCGAT.GCCAAT_S50","ddRADseq.4990.5_GT23.00318_AGCTA.GCCAAT_S29","ddRADseq.5040.7_GT23.00304_AAGGA.ACAGTG_S63","ddRADseq.5060.2_GT23.00331_TCGAT.CAGATC_S70","ddRADseq.4990.6_GT23.00319_CGATC.GCCAAT_S26","ddRADseq.4991.1_GT23.00322_CAACC.CAGATC_S24","ddRADseq.5041.1_GT23.00306_ACACA.ACAGTG_S65","ddRADseq.4991.5_GT23.00326_AAGGA.CAGATC_S84","ddRADseq.1314_GT23.00337_AAGGA.ACTTGA_S95","ddRADseq.4991.6_GT23.00327_AACCA.CAGATC_S53","ddRADseq.5060.1_GT23.00330_CGATC.CAGATC_S55","ddRADseq.5061.3_GT23.00340_AGCTA.ACTTGA_S91","ddRADseq.5061.2_GT23.00339_ACACA.ACTTGA_S14","ddRADseq.5040.2_GT23.00299_ACTTC.ACAGTG_S73","ddRADseq.5040.5_GT23.00302_GGTTG.ACAGTG_S92","ddRADseq.4991.2_GT23.00323_ATACG.CAGATC_S33","ddRADseq.5040.4_GT23.00301_ATACG.ACAGTG_S54","ddRADseq.5041.5_GT23.00310_ACTTC.GCCAAT_S57","ddRADseq.5060.6_GT23.00335_GGTTG.ACTTGA_S37","ddRADseq.4991.3_GT23.00324_GGTTG.CAGATC_S75","ddRADseq.4990.1_GT23.00314_ACGGT.GCCAAT_S48","ddRADseq.5061.1_GT23.00338_AACCA.ACTTGA_S7","ddRADseq.5040.6_GT23.00303_ACGGT.ACAGTG_S68","ddRADseq.5060.3_GT23.00332_GCATG.CAGATC_S89","ddRADseq.5060.5_GT23.00334_ATACG.ACTTGA_S46","ddRADseq.4991.4_GT23.00325_ACGGT.CAGATC_S59","ddRADseq.1301_GT23.00313_GGTTG.GCCAAT_S30","ddRADseq.5040.3_GT23.00300_CAACC.ACAGTG_S61","ddRADseq.5061.4_GT23.00341_CGATC.ACTTGA_S81","ddRADseq.5061.5_GT23.00342_TCGAT.ACTTGA_S58","ddRADseq.5041.6_GT23.00311_CAACC.GCCAAT_S79","ddRADseq.5060.7_GT23.00336_ACGGT.ACTTGA_S76","ddRADseq.5040.1_GT23.00298_GCATG.ACAGTG_S38","ddRADseq.5041.4_GT23.00309_GCATG.GCCAAT_S18","ddRADseq.5060.4_GT23.00333_CAACC.ACTTGA_S16","ddRADseq.4990.3_GT23.00316_AACCA.GCCAAT_S85","ddRADseq.5041.3_GT23.00308_CGATC.ACAGTG_S32","ddRADseq.5041.7_GT23.00312_ATACG.GCCAAT_S36","ddRADseq.4990.2_GT23.00315_AAGGA.GCCAAT_S39","ddRADseq.1342_GT23.00305_AACCA.ACAGTG_S71","ddRADseq.4991.7_GT23.00328_ACACA.CAGATC_S87","ddRADseq.4990.4_GT23.00317_ACACA.GCCAAT_S27","ddRADseq.5061.6_GT23.00343_GCATG.ACTTGA_S12","ddRADseq.1320_GT23.00297_TCGAT.ACAGTG_S78","ddRADseq.1328_GT23.00329_AGCTA.CAGATC_S3","ddRADseq.5061.7_GT23.00344_ACTTC.ACTTGA_S13","ddRADseq.1339_GT23.00321_ACTTC.CAGATC_S42"],"tickvals":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48],"categoryorder":"array","categoryarray":["ddRADseq.5041.2_GT23.00307_AGCTA.ACAGTG_S56","ddRADseq.4990.7_GT23.00320_TCGAT.GCCAAT_S50","ddRADseq.4990.5_GT23.00318_AGCTA.GCCAAT_S29","ddRADseq.5040.7_GT23.00304_AAGGA.ACAGTG_S63","ddRADseq.5060.2_GT23.00331_TCGAT.CAGATC_S70","ddRADseq.4990.6_GT23.00319_CGATC.GCCAAT_S26","ddRADseq.4991.1_GT23.00322_CAACC.CAGATC_S24","ddRADseq.5041.1_GT23.00306_ACACA.ACAGTG_S65","ddRADseq.4991.5_GT23.00326_AAGGA.CAGATC_S84","ddRADseq.1314_GT23.00337_AAGGA.ACTTGA_S95","ddRADseq.4991.6_GT23.00327_AACCA.CAGATC_S53","ddRADseq.5060.1_GT23.00330_CGATC.CAGATC_S55","ddRADseq.5061.3_GT23.00340_AGCTA.ACTTGA_S91","ddRADseq.5061.2_GT23.00339_ACACA.ACTTGA_S14","ddRADseq.5040.2_GT23.00299_ACTTC.ACAGTG_S73","ddRADseq.5040.5_GT23.00302_GGTTG.ACAGTG_S92","ddRADseq.4991.2_GT23.00323_ATACG.CAGATC_S33","ddRADseq.5040.4_GT23.00301_ATACG.ACAGTG_S54","ddRADseq.5041.5_GT23.00310_ACTTC.GCCAAT_S57","ddRADseq.5060.6_GT23.00335_GGTTG.ACTTGA_S37","ddRADseq.4991.3_GT23.00324_GGTTG.CAGATC_S75","ddRADseq.4990.1_GT23.00314_ACGGT.GCCAAT_S48","ddRADseq.5061.1_GT23.00338_AACCA.ACTTGA_S7","ddRADseq.5040.6_GT23.00303_ACGGT.ACAGTG_S68","ddRADseq.5060.3_GT23.00332_GCATG.CAGATC_S89","ddRADseq.5060.5_GT23.00334_ATACG.ACTTGA_S46","ddRADseq.4991.4_GT23.00325_ACGGT.CAGATC_S59","ddRADseq.1301_GT23.00313_GGTTG.GCCAAT_S30","ddRADseq.5040.3_GT23.00300_CAACC.ACAGTG_S61","ddRADseq.5061.4_GT23.00341_CGATC.ACTTGA_S81","ddRADseq.5061.5_GT23.00342_TCGAT.ACTTGA_S58","ddRADseq.5041.6_GT23.00311_CAACC.GCCAAT_S79","ddRADseq.5060.7_GT23.00336_ACGGT.ACTTGA_S76","ddRADseq.5040.1_GT23.00298_GCATG.ACAGTG_S38","ddRADseq.5041.4_GT23.00309_GCATG.GCCAAT_S18","ddRADseq.5060.4_GT23.00333_CAACC.ACTTGA_S16","ddRADseq.4990.3_GT23.00316_AACCA.GCCAAT_S85","ddRADseq.5041.3_GT23.00308_CGATC.ACAGTG_S32","ddRADseq.5041.7_GT23.00312_ATACG.GCCAAT_S36","ddRADseq.4990.2_GT23.00315_AAGGA.GCCAAT_S39","ddRADseq.1342_GT23.00305_AACCA.ACAGTG_S71","ddRADseq.4991.7_GT23.00328_ACACA.CAGATC_S87","ddRADseq.4990.4_GT23.00317_ACACA.GCCAAT_S27","ddRADseq.5061.6_GT23.00343_GCATG.ACTTGA_S12","ddRADseq.1320_GT23.00297_TCGAT.ACAGTG_S78","ddRADseq.1328_GT23.00329_AGCTA.CAGATC_S3","ddRADseq.5061.7_GT23.00344_ACTTC.ACTTGA_S13","ddRADseq.1339_GT23.00321_ACTTC.CAGATC_S42"],"nticks":null,"ticks":"","tickcolor":null,"ticklen":3.65296803652968,"tickwidth":0,"showticklabels":false,"tickfont":{"color":null,"family":null,"size":0},"tickangle":-0,"showline":false,"linecolor":null,"linewidth":0,"showgrid":false,"gridcolor":null,"gridwidth":0,"zeroline":false,"anchor":"y","title":{"text":"reorder(sample, percent_missing)","font":{"color":"rgba(0,0,0,1)","family":"","size":14.6118721461187}},"hoverformat":".2f"},"yaxis":{"domain":[0,1],"automargin":true,"type":"linear","autorange":false,"range":[40.6332188334895,97.8907740883384],"tickmode":"array","ticktext":["50","60","70","80","90"],"tickvals":[50,60,70,80,90],"categoryorder":"array","categoryarray":["50","60","70","80","90"],"nticks":null,"ticks":"outside","tickcolor":"rgba(51,51,51,1)","ticklen":3.65296803652968,"tickwidth":0.66417600664176,"showticklabels":true,"tickfont":{"color":"rgba(77,77,77,1)","family":"","size":11.689497716895},"tickangle":-0,"showline":false,"linecolor":null,"linewidth":0,"showgrid":false,"gridcolor":null,"gridwidth":0,"zeroline":false,"anchor":"x","title":{"text":"percent_missing","font":{"color":"rgba(0,0,0,1)","family":"","size":14.6118721461187}},"hoverformat":".2f"},"shapes":[{"type":"rect","fillcolor":"transparent","line":{"color":"rgba(51,51,51,1)","width":0.66417600664176,"linetype":"solid"},"yref":"paper","xref":"paper","x0":0,"x1":1,"y0":0,"y1":1}],"showlegend":false,"legend":{"bgcolor":"rgba(255,255,255,1)","bordercolor":"transparent","borderwidth":1.88976377952756,"font":{"color":"rgba(0,0,0,1)","family":"","size":11.689497716895}},"hovermode":"closest","barmode":"relative"},"config":{"doubleClick":"reset","modeBarButtonsToAdd":["hoverclosest","hovercompare"],"showSendToCloud":false},"source":"A","attrs":{"17e63581efcc5":{"x":{},"y":{},"type":"scatter"}},"cur_data":"17e63581efcc5","visdat":{"17e63581efcc5":["function (y) ","x"]},"highlight":{"on":"plotly_click","persistent":false,"dynamic":false,"selectize":false,"opacityDim":0.2,"selected":{"opacity":1},"debounce":0},"shinyEvents":["plotly_hover","plotly_click","plotly_selected","plotly_relayout","plotly_brushed","plotly_brushing","plotly_clickannotation","plotly_doubleclick","plotly_deselect","plotly_afterplot","plotly_sunburstclick"],"base_url":"https://plot.ly"},"evals":[],"jsHooks":[]}</script>
+<pre class="r"><code>percent_missing_cutoff &lt;- 10</code></pre>
+<p>48 4WC sample(s) is/are missing data for greater than 10% of
+markers.</p>
+</div>
+<div id="sample-duplicates" class="section level2">
+<h2>Sample duplicates</h2>
+<p>We next calculated whether, based on genotype information alone,
+samples appear to be duplicates. We estimated from GigaMUGA data that
+there are probably no duplicate samples.</p>
+<pre class="r"><code># Determine if any samples are duplicates based on genetic similarity
+cg &lt;- qtl2::compare_geno(ddRADseq_4WC, cores=0)
+qtl2::plot_compare_geno(x = cg, rug = T, main = &quot;4WC - ddRADseq Data&quot;)</code></pre>
+<p><img src="figure/HR_from_stitch.Rmd/sample%20duplicates%204WC-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-sample-duplicates-4WC-1">
+Past versions of "sample duplicates 4WC-1.png"
+</button>
+</p>
+<div id="fig-no-spaces-sample-duplicates-4WC-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/TheJacksonLaboratory/lcGBS_wf/blob/18aadff4644ce0270df495c357f1c36d6773ca0e/docs/figure/HR_from_stitch.Rmd/sample duplicates 4WC-1.png" target="_blank">18aadff</a>
+</td>
+<td>
+sam-widmayer
+</td>
+<td>
+2023-02-09
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>From the above plot, it would seem that the genotyping can’t
+distinguish certain samples from each other.</p>
+<pre class="r"><code>cgGM &lt;- qtl2::compare_geno(X4WC_cross, cores=0)
+qtl2::plot_compare_geno(x = cgGM, rug = T, main = &quot;4WC - GigaMUGA Data&quot;)</code></pre>
+<p><img src="figure/HR_from_stitch.Rmd/sample%20duplicates%20for%20GM-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-sample-duplicates-for-GM-1">
+Past versions of "sample duplicates for GM-1.png"
+</button>
+</p>
+<div id="fig-no-spaces-sample-duplicates-for-GM-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/TheJacksonLaboratory/lcGBS_wf/blob/578d8eaded011225b8293e66d0d5d9841d56c2f7/docs/figure/HR_from_stitch.Rmd/sample duplicates for GM-1.png" target="_blank">578d8ea</a>
+</td>
+<td>
+sam-widmayer
+</td>
+<td>
+2023-02-09
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>These mice are F2/F3 individuals, so we expect that they retain a
+good deal of relatedness. We would hypothesize that due to the lower
+coverage of the ddRADseq genotyping that we miss areas of the genome
+that would distinguish individuals from each other.</p>
+</div>
+<div id="haplotype-reconstruction" class="section level2">
+<h2>Haplotype reconstruction</h2>
+<pre class="r"><code># Insert pseudomarkers
+dd_4WC_map &lt;- qtl2::insert_pseudomarkers(ddRADseq_4WC$gmap, step = 1)
+
+# Calculate genotype probs
+dir.create(&quot;results/4WC_ddRADseq_pr&quot;, showWarnings = F)
+fpr_dd4WC &lt;- suppressWarnings(qtl2fst::calc_genoprob_fst(cross = ddRADseq_4WC, 
+                                                   map = dd_4WC_map,
+                                                   fbase = &quot;pr&quot;,
+                                                   fdir = &quot;results/4WC_ddRADseq_pr&quot;,
+                                                   error_prob=0.002, 
+                                                   overwrite=TRUE,cores = parallel::detectCores()))
+
+# Make viterbi
+dd4WC_m &lt;- maxmarg(fpr_dd4WC, minprob=0.5)
+
+# Phase genotypes
+dd4WC_ph &lt;- qtl2::guess_phase(cross = ddRADseq_4WC, geno = dd4WC_m)
+
+# Write Plots
+X4WCcolors &lt;- c(qtl2::CCcolors[6],
+  &quot;#5ADBFF&quot;,
+  &quot;#153B50&quot;,
+  qtl2::CCcolors[7])
+names(X4WCcolors)[2:3] &lt;- c(&quot;POHN&quot;,&quot;GOR&quot;)
+for(i in 1:nrow(ddRADseq_4WC$cross_info)){
+  png(file=paste0(&quot;output/plot_onegeno_&quot;,rownames(ddRADseq_4WC$cross_info)[i],&quot;.png&quot;))
+  qtl2::plot_onegeno(geno = dd4WC_ph, 
+                     map = dd_4WC_map,
+                     ind = i, 
+                     col = X4WCcolors) # add legends here
+  legend(17, 85, 
+         legend=c(&quot;A&quot;, &quot;B&quot;, &quot;C&quot;, &quot;D&quot;),
+         fill=X4WCcolors, cex=0.8)
+  dev.off()
+}</code></pre>
+<p>Below are example chromosome paintings of haplotype reconstructions
+from 4WC ddRADseq samples compared to the same individiuals genotyped
+with GigaMUGA.</p>
+<pre class="r"><code># GigaMUGA haplotypes
+load(&quot;data/4WC_genoprobs.RData&quot;)
+gm_4WC_m &lt;- maxmarg(pr, minprob=0.5)
+gm_4WC_ph &lt;- qtl2::guess_phase(cross = X4WC_cross, geno = gm_4WC_m)
+gm_4WC_map &lt;- qtl2::insert_pseudomarkers(X4WC_cross$gmap, step = 1)
+
+# Example plots
+indivs &lt;- sample(seq(1:nrow(ddRADseq_4WC$cross_info)), size = 5, replace = F)
+
+# ddRADseq
+plot_indiv &lt;- rownames(ddRADseq_4WC$cross_info)[indivs[1]]
+qtl2::plot_onegeno(geno = dd4WC_ph, 
+                   map = dd_4WC_map,
+                   ind = plot_indiv, 
+                   col = X4WCcolors,
+                   main = plot_indiv) # add legends here
+legend(17, 85, legend=c(&quot;A&quot;, &quot;B&quot;, &quot;C&quot;, &quot;D&quot;), fill=X4WCcolors, cex=0.8)</code></pre>
+<p><img src="figure/HR_from_stitch.Rmd/haplotype%20plots%204WC-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-haplotype-plots-4WC-1">
+Past versions of "haplotype plots 4WC-1.png"
+</button>
+</p>
+<div id="fig-no-spaces-haplotype-plots-4WC-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/TheJacksonLaboratory/lcGBS_wf/blob/18aadff4644ce0270df495c357f1c36d6773ca0e/docs/figure/HR_from_stitch.Rmd/haplotype plots 4WC-1.png" target="_blank">18aadff</a>
+</td>
+<td>
+sam-widmayer
+</td>
+<td>
+2023-02-09
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<pre class="r"><code># DO
+do_sample_index  &lt;- grep(pattern = gsub(strsplit(plot_indiv, split = &quot;_&quot;)[[1]][1], 
+                                        pattern = &quot;ddRADseq.&quot;,
+                                        replacement = &quot;&quot;),
+                         x = gsub(rownames(X4WC_cross$cross_info), 
+                                  pattern = &quot;-&quot;, 
+                                  replacement = &quot;.&quot;))
+qtl2::plot_onegeno(geno = gm_4WC_ph, 
+                   map = gm_4WC_map,
+                   ind = do_sample_index, 
+                   col = X4WCcolors,
+                   main = rownames(X4WC_cross$cross_info)[do_sample_index]) # add legends here
+legend(17, 85, legend=c(&quot;A&quot;, &quot;B&quot;, &quot;C&quot;, &quot;D&quot;), fill=X4WCcolors, cex=0.8)</code></pre>
+<p><img src="figure/HR_from_stitch.Rmd/haplotype%20plots%204WC-2.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-haplotype-plots-4WC-2">
+Past versions of "haplotype plots 4WC-2.png"
+</button>
+</p>
+<div id="fig-no-spaces-haplotype-plots-4WC-2" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/TheJacksonLaboratory/lcGBS_wf/blob/18aadff4644ce0270df495c357f1c36d6773ca0e/docs/figure/HR_from_stitch.Rmd/haplotype plots 4WC-2.png" target="_blank">18aadff</a>
+</td>
+<td>
+sam-widmayer
+</td>
+<td>
+2023-02-09
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<pre class="r"><code>plot_indiv &lt;- rownames(ddRADseq_4WC$cross_info)[indivs[2]]
+qtl2::plot_onegeno(geno = dd4WC_ph, 
+                   map = dd_4WC_map,
+                   ind = plot_indiv, 
+                   col = X4WCcolors,
+                   main = plot_indiv) # add legends here
+legend(17, 85, legend=c(&quot;A&quot;, &quot;B&quot;, &quot;C&quot;, &quot;D&quot;), fill=X4WCcolors, cex=0.8)</code></pre>
+<p><img src="figure/HR_from_stitch.Rmd/haplotype%20plots%204WC-3.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-haplotype-plots-4WC-3">
+Past versions of "haplotype plots 4WC-3.png"
+</button>
+</p>
+<div id="fig-no-spaces-haplotype-plots-4WC-3" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/TheJacksonLaboratory/lcGBS_wf/blob/18aadff4644ce0270df495c357f1c36d6773ca0e/docs/figure/HR_from_stitch.Rmd/haplotype plots 4WC-3.png" target="_blank">18aadff</a>
+</td>
+<td>
+sam-widmayer
+</td>
+<td>
+2023-02-09
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<pre class="r"><code>do_sample_index  &lt;- grep(pattern = gsub(strsplit(plot_indiv, split = &quot;_&quot;)[[1]][1], 
+                                        pattern = &quot;ddRADseq.&quot;,
+                                        replacement = &quot;&quot;),
+                         x = gsub(rownames(X4WC_cross$cross_info), 
+                                  pattern = &quot;-&quot;, 
+                                  replacement = &quot;.&quot;))
+qtl2::plot_onegeno(geno = gm_4WC_ph, 
+                   map = gm_4WC_map,
+                   ind = do_sample_index, 
+                   col = X4WCcolors,
+                   main = rownames(X4WC_cross$cross_info)[do_sample_index]) # add legends here
+legend(17, 85, legend=c(&quot;A&quot;, &quot;B&quot;, &quot;C&quot;, &quot;D&quot;), fill=X4WCcolors, cex=0.8)</code></pre>
+<p><img src="figure/HR_from_stitch.Rmd/haplotype%20plots%204WC-4.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-haplotype-plots-4WC-4">
+Past versions of "haplotype plots 4WC-4.png"
+</button>
+</p>
+<div id="fig-no-spaces-haplotype-plots-4WC-4" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/TheJacksonLaboratory/lcGBS_wf/blob/18aadff4644ce0270df495c357f1c36d6773ca0e/docs/figure/HR_from_stitch.Rmd/haplotype plots 4WC-4.png" target="_blank">18aadff</a>
+</td>
+<td>
+sam-widmayer
+</td>
+<td>
+2023-02-09
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<pre class="r"><code>plot_indiv &lt;- rownames(ddRADseq_4WC$cross_info)[indivs[3]]
+qtl2::plot_onegeno(geno = dd4WC_ph, 
+                   map = dd_4WC_map,
+                   ind = plot_indiv, 
+                   col = X4WCcolors,
+                   main = plot_indiv) # add legends here
+legend(17, 85, legend=c(&quot;A&quot;, &quot;B&quot;, &quot;C&quot;, &quot;D&quot;), fill=X4WCcolors, cex=0.8)</code></pre>
+<p><img src="figure/HR_from_stitch.Rmd/haplotype%20plots%204WC-5.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-haplotype-plots-4WC-5">
+Past versions of "haplotype plots 4WC-5.png"
+</button>
+</p>
+<div id="fig-no-spaces-haplotype-plots-4WC-5" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/TheJacksonLaboratory/lcGBS_wf/blob/18aadff4644ce0270df495c357f1c36d6773ca0e/docs/figure/HR_from_stitch.Rmd/haplotype plots 4WC-5.png" target="_blank">18aadff</a>
+</td>
+<td>
+sam-widmayer
+</td>
+<td>
+2023-02-09
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<pre class="r"><code>do_sample_index  &lt;- grep(pattern = gsub(strsplit(plot_indiv, split = &quot;_&quot;)[[1]][1], 
+                                        pattern = &quot;ddRADseq.&quot;,
+                                        replacement = &quot;&quot;),
+                         x = gsub(rownames(X4WC_cross$cross_info), 
+                                  pattern = &quot;-&quot;, 
+                                  replacement = &quot;.&quot;))
+qtl2::plot_onegeno(geno = gm_4WC_ph, 
+                   map = gm_4WC_map,
+                   ind = do_sample_index, 
+                   col = X4WCcolors,
+                   main = rownames(X4WC_cross$cross_info)[do_sample_index]) # add legends here
+legend(17, 85, legend=c(&quot;A&quot;, &quot;B&quot;, &quot;C&quot;, &quot;D&quot;), fill=X4WCcolors, cex=0.8)</code></pre>
+<p><img src="figure/HR_from_stitch.Rmd/haplotype%20plots%204WC-6.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-haplotype-plots-4WC-6">
+Past versions of "haplotype plots 4WC-6.png"
+</button>
+</p>
+<div id="fig-no-spaces-haplotype-plots-4WC-6" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/TheJacksonLaboratory/lcGBS_wf/blob/18aadff4644ce0270df495c357f1c36d6773ca0e/docs/figure/HR_from_stitch.Rmd/haplotype plots 4WC-6.png" target="_blank">18aadff</a>
+</td>
+<td>
+sam-widmayer
+</td>
+<td>
+2023-02-09
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<pre class="r"><code>plot_indiv &lt;- rownames(ddRADseq_4WC$cross_info)[indivs[4]]
+qtl2::plot_onegeno(geno = dd4WC_ph, 
+                   map = dd_4WC_map,
+                   ind = plot_indiv, 
+                   col = X4WCcolors,
+                   main = plot_indiv) # add legends here
+legend(17, 85, legend=c(&quot;A&quot;, &quot;B&quot;, &quot;C&quot;, &quot;D&quot;), fill=X4WCcolors, cex=0.8)</code></pre>
+<p><img src="figure/HR_from_stitch.Rmd/haplotype%20plots%204WC-7.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-haplotype-plots-4WC-7">
+Past versions of "haplotype plots 4WC-7.png"
+</button>
+</p>
+<div id="fig-no-spaces-haplotype-plots-4WC-7" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/TheJacksonLaboratory/lcGBS_wf/blob/18aadff4644ce0270df495c357f1c36d6773ca0e/docs/figure/HR_from_stitch.Rmd/haplotype plots 4WC-7.png" target="_blank">18aadff</a>
+</td>
+<td>
+sam-widmayer
+</td>
+<td>
+2023-02-09
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<pre class="r"><code>do_sample_index  &lt;- grep(pattern = gsub(strsplit(plot_indiv, split = &quot;_&quot;)[[1]][1], 
+                                        pattern = &quot;ddRADseq.&quot;,
+                                        replacement = &quot;&quot;),
+                         x = gsub(rownames(X4WC_cross$cross_info), 
+                                  pattern = &quot;-&quot;, 
+                                  replacement = &quot;.&quot;))
+qtl2::plot_onegeno(geno = gm_4WC_ph, 
+                   map = gm_4WC_map,
+                   ind = do_sample_index, 
+                   col = X4WCcolors,
+                   main = rownames(X4WC_cross$cross_info)[do_sample_index]) # add legends here
+legend(17, 85, legend=c(&quot;A&quot;, &quot;B&quot;, &quot;C&quot;, &quot;D&quot;), fill=X4WCcolors, cex=0.8)</code></pre>
+<p><img src="figure/HR_from_stitch.Rmd/haplotype%20plots%204WC-8.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-haplotype-plots-4WC-8">
+Past versions of "haplotype plots 4WC-8.png"
+</button>
+</p>
+<div id="fig-no-spaces-haplotype-plots-4WC-8" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/TheJacksonLaboratory/lcGBS_wf/blob/18aadff4644ce0270df495c357f1c36d6773ca0e/docs/figure/HR_from_stitch.Rmd/haplotype plots 4WC-8.png" target="_blank">18aadff</a>
+</td>
+<td>
+sam-widmayer
+</td>
+<td>
+2023-02-09
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<pre class="r"><code>plot_indiv &lt;- rownames(ddRADseq_4WC$cross_info)[indivs[5]]
+qtl2::plot_onegeno(geno = dd4WC_ph, 
+                   map = dd_4WC_map,
+                   ind = plot_indiv, 
+                   col = X4WCcolors,
+                   main = plot_indiv) # add legends here
+legend(17, 85, legend=c(&quot;A&quot;, &quot;B&quot;, &quot;C&quot;, &quot;D&quot;), fill=X4WCcolors, cex=0.8)</code></pre>
+<p><img src="figure/HR_from_stitch.Rmd/haplotype%20plots%204WC-9.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-haplotype-plots-4WC-9">
+Past versions of "haplotype plots 4WC-9.png"
+</button>
+</p>
+<div id="fig-no-spaces-haplotype-plots-4WC-9" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/TheJacksonLaboratory/lcGBS_wf/blob/18aadff4644ce0270df495c357f1c36d6773ca0e/docs/figure/HR_from_stitch.Rmd/haplotype plots 4WC-9.png" target="_blank">18aadff</a>
+</td>
+<td>
+sam-widmayer
+</td>
+<td>
+2023-02-09
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<pre class="r"><code>do_sample_index  &lt;- grep(pattern = gsub(strsplit(plot_indiv, split = &quot;_&quot;)[[1]][1], 
+                                        pattern = &quot;ddRADseq.&quot;,
+                                        replacement = &quot;&quot;),
+                         x = gsub(rownames(X4WC_cross$cross_info), 
+                                  pattern = &quot;-&quot;, 
+                                  replacement = &quot;.&quot;))
+qtl2::plot_onegeno(geno = gm_4WC_ph, 
+                   map = gm_4WC_map,
+                   ind = do_sample_index, 
+                   col = X4WCcolors,
+                   main = rownames(X4WC_cross$cross_info)[do_sample_index]) # add legends here
+legend(17, 85, legend=c(&quot;A&quot;, &quot;B&quot;, &quot;C&quot;, &quot;D&quot;), fill=X4WCcolors, cex=0.8)</code></pre>
+<p><img src="figure/HR_from_stitch.Rmd/haplotype%20plots%204WC-10.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-haplotype-plots-4WC-10">
+Past versions of "haplotype plots 4WC-10.png"
+</button>
+</p>
+<div id="fig-no-spaces-haplotype-plots-4WC-10" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/TheJacksonLaboratory/lcGBS_wf/blob/18aadff4644ce0270df495c357f1c36d6773ca0e/docs/figure/HR_from_stitch.Rmd/haplotype plots 4WC-10.png" target="_blank">18aadff</a>
+</td>
+<td>
+sam-widmayer
+</td>
+<td>
+2023-02-09
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>A few things can be observed from these plots. First, the ddRADseq
+haplotypes reflect complete homozygosity, which is not possible for
+these mice. This is could be due to low coverage in these test runs; a
+lack of sequencing depth across sites will result in not enough data to
+call heterozygous sites confidently. The degree of missing genotypes
+across samples reflects this lack of depth.</p>
+<p>Second, many of the haplotype identities are discordant between the
+GigaMUGA and ddRADseq samples at the same genomic sites. This could
+reflect the fact that the same ancestral haplotype that STITCH denotes
+as “A” is not the same as the haplotype derived from qtl2. We could work
+around this by supplying a smaller set of well-curated consensus
+genotypes. We haven’t tested whether including these data improve the
+functionality of STITCH for our purposes.</p>
+</div>
+</div>
+<div id="diversity-outbred-ddradseq-test-samples"
+class="section level1">
+<h1>Diversity Outbred ddRADseq Test Samples</h1>
+<div id="writing-control-file-1" class="section level2">
+<h2>Writing control file</h2>
+<p>There are a handful of DO samples in the metadata which were not
+sequenced as a test run. Those samples throw the “sample from metadata
+not sequenced” error observed below.</p>
+<pre class="r"><code># Establish chromosome vector
+chr &lt;- c(1,3:19)
+
+# read in covariate file
+metadata &lt;- readr::read_csv(file = &quot;data/DO_covar.csv&quot;, 
+                            col_types = c(sample = &quot;c&quot;,
+                                          Sex = &quot;c&quot;,
+                                          generation = &quot;n&quot;), 
+                            show_col_types = T)</code></pre>
+<pre><code>Warning: The following named parsers don&#39;t match the column names: sample,
+generation</code></pre>
+<pre><code>Rows: 56 Columns: 3
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: &quot;,&quot;
+chr (2): SampleID, Sex
+dbl (1): Generation
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
+<pre class="r"><code># match sample names to what is encoded in genotype files
+geno_header &lt;- c(as.character(readr::read_csv(file = &quot;data/STITCH_data/DO_ddRADseq/geno1.csv&quot;, 
+                                              col_names = F, skip = 3, n_max = 1)))[-1]</code></pre>
+<pre><code>Rows: 1 Columns: 49
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: &quot;,&quot;
+chr (49): X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, ...
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
+<pre class="r"><code>new_sampleID &lt;- c()
+for(i in 1:length(metadata$SampleID)){
+  sample_index &lt;- grep(geno_header, pattern = gsub(metadata$SampleID[i], 
+                                                   pattern = &quot;-&quot;,
+                                                   replacement = &quot;.&quot;))
+  if(length(sample_index) == 0){
+    print(paste(&quot;sample from metadata not sequenced:&quot;, metadata$SampleID[i]))
+    new_sampleID[i] &lt;- NA
+  } else {
+    new_sampleID[i] &lt;- geno_header[sample_index]
+  }
+  
+}</code></pre>
+<pre><code>[1] &quot;sample from metadata not sequenced: F06&quot;
+[1] &quot;sample from metadata not sequenced: F25&quot;
+[1] &quot;sample from metadata not sequenced: F38&quot;
+[1] &quot;sample from metadata not sequenced: F51&quot;
+[1] &quot;sample from metadata not sequenced: M12&quot;
+[1] &quot;sample from metadata not sequenced: M33&quot;
+[1] &quot;sample from metadata not sequenced: M36&quot;
+[1] &quot;sample from metadata not sequenced: M37&quot;</code></pre>
+<pre class="r"><code># Write updated metadata file
+updated_DO_metadata &lt;- metadata %&gt;%
+  dplyr::mutate(newSampID = new_sampleID) %&gt;%
+  dplyr::select(-SampleID) %&gt;%
+  dplyr::select(newSampID, everything()) %&gt;%
+  dplyr::rename(SampleID = newSampID) %&gt;%
+  dplyr::filter(!is.na(SampleID))
+write.csv(updated_DO_metadata, file = &quot;data/STITCH_data/DO_ddRADseq/DO_ddRADseq_crossinfo.csv&quot;, quote = F, row.names = F)
+
+# Write control file
+qtl2::write_control_file(output_file = &quot;data/STITCH_data/DO_ddRADseq/DO_ddRADseq.json&quot;,
+                         crosstype=&quot;do&quot;,
+                         description=&quot;DO_ddRADseq&quot;,
+                         founder_geno_file=paste0(&quot;foundergeno&quot;, chr, &quot;.csv&quot;), 
+                         founder_geno_transposed=TRUE,
+                         gmap_file=paste0(&quot;gmap&quot;, chr, &quot;.csv&quot;),
+                         pmap_file=paste0(&quot;pmap&quot;, chr, &quot;.csv&quot;),
+                         geno_file=paste0(&quot;geno&quot;, chr, &quot;.csv&quot;),
+                         geno_transposed = TRUE,
+                         geno_codes=list(A=1, H=2, B=3), 
+                         sex_covar = &quot;Sex&quot;,
+                         sex_codes=list(F=&quot;Female&quot;, M=&quot;Male&quot;), 
+                         covar_file = &quot;DO_ddRADseq_crossinfo.csv&quot;,
+                         crossinfo_covar=&quot;Generation&quot;,
+                         overwrite = T)</code></pre>
+</div>
+<div id="calculating-missing-genotypes-1" class="section level2">
+<h2>Calculating missing genotypes</h2>
+<pre class="r"><code># Load in the cross object
+ddRADseq_DO &lt;- qtl2::read_cross2(&quot;data/STITCH_data/DO_ddRADseq/DO_ddRADseq.json&quot;)</code></pre>
+<pre><code>Warning in drop_incomplete_markers(output): Omitting 1 markers that are not in
+both genotypes and maps</code></pre>
+<pre class="r"><code># Also loading in the cross object from GigaMUGA genotypes
+load(&quot;data/DO_cross.RData&quot;)
+
+# Drop null markers
+ddRADseq_DO &lt;- qtl2::drop_nullmarkers(ddRADseq_DO)</code></pre>
+<pre><code>Dropping 75 markers with no data</code></pre>
+<pre class="r"><code># Reordering genotypes so that most common allele in founders is first
+for(chr in seq_along(ddRADseq_DO$founder_geno)) {
+  fg &lt;- ddRADseq_DO$founder_geno[[chr]]
+  g &lt;- ddRADseq_DO$geno[[chr]]
+  f1 &lt;- colSums(fg==1)/colSums(fg != 0)
+  
+  fg[fg==0] &lt;- NA
+  g[g==0] &lt;- NA
+  
+  fg[,f1 &lt; 0.5] &lt;- 4 - fg[,f1 &lt; 0.5]
+  g[,f1 &lt; 0.5]  &lt;- 4 - g[,f1 &lt; 0.5]
+  
+  fg[is.na(fg)] &lt;- 0
+  g[is.na(g)] &lt;- 0
+  
+  ddRADseq_DO$founder_geno[[chr]] &lt;- fg
+  ddRADseq_DO$geno[[chr]] &lt;- g
+}
+
+# Calculate the percent of missing genotypes per sample
+percent_missing &lt;- qtl2::n_missing(ddRADseq_DO, &quot;ind&quot;, &quot;prop&quot;)*100
+missing_genos_df &lt;- data.frame(names(percent_missing), percent_missing) %&gt;%
+  `colnames&lt;-`(c(&quot;sample&quot;,&quot;percent_missing&quot;))
+
+# Plot missing genotypes per sample
+missing_genos_plot &lt;- ggplot(data = missing_genos_df, mapping = aes(x = reorder(sample, percent_missing),
+                                                                    y = percent_missing)) +
+  theme_bw() +
+  geom_point(shape = 21) +
+  labs(title = &quot;DO Missing Genotypes&quot;) +
+  theme(legend.position = &quot;bottom&quot;,
+        panel.grid = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank())
+plotly::ggplotly(missing_genos_plot)</code></pre>
+<div id="htmlwidget-5ef7f10c387ecfa5b8fa" style="width:672px;height:480px;" class="plotly html-widget"></div>
+<script type="application/json" data-for="htmlwidget-5ef7f10c387ecfa5b8fa">{"x":{"data":[{"x":[25,14,44,45,6,4,5,17,42,10,1,21,43,16,22,11,23,18,27,47,48,32,41,28,15,39,38,20,36,2,7,34,40,8,33,24,31,9,29,46,35,19,12,26,37,3,13,30],"y":[76.3352232121588,63.7238553528039,92.4293677640669,92.8343417980847,52.9753680499309,48.4444232693316,50.545523845824,67.9260565057888,90.8618800323979,56.3914431368812,32.7647815522417,73.9720806136548,91.5288960884273,67.1637524417552,74.1769498308638,59.6502930106246,74.5866882652818,68.045166515794,77.6216113202154,94.8068035637715,98.4658630711325,80.3706703511363,89.3039211015294,77.7216637286197,66.8064224117395,88.5940254418981,87.7411977702606,72.5141740911906,85.4161703749583,37.6911715660584,53.8091381199676,82.1049120968126,89.2753346991281,53.8901329267712,81.7761684691982,75.6110343513269,79.5464290819,55.181285435228,78.455381390252,93.363190242508,83.4484730096717,68.9361093906332,61.3464195530992,76.7687836485778,87.7126113678594,48.1919100481204,63.023488493973,79.1223974462814],"text":["reorder(sample, percent_missing): ddRADseq.F17_GT23.00258_ACGGT.ATCACG_S45<br />percent_missing: 76.33522","reorder(sample, percent_missing): ddRADseq.F37_GT23.00269_GGTTG.CGATGT_S72<br />percent_missing: 63.72386","reorder(sample, percent_missing): ddRADseq.F33_GT23.00267_CAACC.CGATGT_S10<br />percent_missing: 92.42937","reorder(sample, percent_missing): ddRADseq.M45_GT23.00295_ACACA.TGACCA_S25<br />percent_missing: 92.83434","reorder(sample, percent_missing): ddRADseq.M20_GT23.00281_ACGGT.TTAGGC_S15<br />percent_missing: 52.97537","reorder(sample, percent_missing): ddRADseq.F26_GT23.00262_AGCTA.CGATGT_S43<br />percent_missing: 48.44442","reorder(sample, percent_missing): ddRADseq.F28_GT23.00263_CGATC.CGATGT_S62<br />percent_missing: 50.54552","reorder(sample, percent_missing): ddRADseq.M17_GT23.00279_ATACG.TTAGGC_S88<br />percent_missing: 67.92606","reorder(sample, percent_missing): ddRADseq.F02_GT23.00249_ACACA.ATCACG_S1<br />percent_missing: 90.86188","reorder(sample, percent_missing): ddRADseq.F07_GT23.00252_TCGAT.ATCACG_S64<br />percent_missing: 56.39144","reorder(sample, percent_missing): ddRADseq.M03_GT23.00273_AGCTA.TTAGGC_S74<br />percent_missing: 32.76478","reorder(sample, percent_missing): ddRADseq.F03_GT23.00250_AGCTA.ATCACG_S67<br />percent_missing: 73.97208","reorder(sample, percent_missing): ddRADseq.M35_GT23.00292_ACGGT.TGACCA_S40<br />percent_missing: 91.52890","reorder(sample, percent_missing): ddRADseq.F12_GT23.00255_CAACC.ATCACG_S20<br />percent_missing: 67.16375","reorder(sample, percent_missing): ddRADseq.F39_GT23.00270_ACGGT.CGATGT_S34<br />percent_missing: 74.17695","reorder(sample, percent_missing): ddRADseq.M32_GT23.00290_ATACG.TGACCA_S4<br />percent_missing: 59.65029","reorder(sample, percent_missing): ddRADseq.M23_GT23.00283_AACCA.TTAGGC_S31<br />percent_missing: 74.58669","reorder(sample, percent_missing): ddRADseq.F36_GT23.00268_ATACG.CGATGT_S94<br />percent_missing: 68.04517","reorder(sample, percent_missing): ddRADseq.F32_GT23.00266_ACTTC.CGATGT_S5<br />percent_missing: 77.62161","reorder(sample, percent_missing): ddRADseq.F08_GT23.00253_GCATG.ATCACG_S22<br />percent_missing: 94.80680","reorder(sample, percent_missing): ddRADseq.F04_GT23.00251_CGATC.ATCACG_S9<br />percent_missing: 98.46586","reorder(sample, percent_missing): ddRADseq.M34_GT23.00291_GGTTG.TGACCA_S86<br />percent_missing: 80.37067","reorder(sample, percent_missing): ddRADseq.F31_GT23.00265_GCATG.CGATGT_S28<br />percent_missing: 89.30392","reorder(sample, percent_missing): ddRADseq.M38_GT23.00293_AAGGA.TGACCA_S19<br />percent_missing: 77.72166","reorder(sample, percent_missing): ddRADseq.F14_GT23.00256_ATACG.ATCACG_S6<br />percent_missing: 66.80642","reorder(sample, percent_missing): ddRADseq.F10_GT23.00254_ACTTC.ATCACG_S66<br />percent_missing: 88.59403","reorder(sample, percent_missing): ddRADseq.M21_GT23.00282_AAGGA.TTAGGC_S83<br />percent_missing: 87.74120","reorder(sample, percent_missing): ddRADseq.M30_GT23.00289_CAACC.TGACCA_S60<br />percent_missing: 72.51417","reorder(sample, percent_missing): ddRADseq.M58_GT23.00296_AGCTA.TGACCA_S49<br />percent_missing: 85.41617","reorder(sample, percent_missing): ddRADseq.M25_GT23.00285_CGATC.TGACCA_S51<br />percent_missing: 37.69117","reorder(sample, percent_missing): ddRADseq.F29_GT23.00264_TCGAT.CGATGT_S52<br />percent_missing: 53.80914","reorder(sample, percent_missing): ddRADseq.M16_GT23.00278_CAACC.TTAGGC_S8<br />percent_missing: 82.10491","reorder(sample, percent_missing): ddRADseq.M14_GT23.00276_GCATG.TTAGGC_S96<br />percent_missing: 89.27533","reorder(sample, percent_missing): ddRADseq.M11_GT23.00275_TCGAT.TTAGGC_S80<br />percent_missing: 53.89013","reorder(sample, percent_missing): ddRADseq.M04_GT23.00274_CGATC.TTAGGC_S93<br />percent_missing: 81.77617","reorder(sample, percent_missing): ddRADseq.F24_GT23.00261_ACACA.CGATGT_S44<br />percent_missing: 75.61103","reorder(sample, percent_missing): ddRADseq.M19_GT23.00280_GGTTG.TTAGGC_S82<br />percent_missing: 79.54643","reorder(sample, percent_missing): ddRADseq.F19_GT23.00259_AAGGA.ATCACG_S41<br />percent_missing: 55.18129","reorder(sample, percent_missing): ddRADseq.F40_GT23.00271_AAGGA.CGATGT_S77<br />percent_missing: 78.45538","reorder(sample, percent_missing): ddRADseq.M39_GT23.00294_AACCA.TGACCA_S2<br />percent_missing: 93.36319","reorder(sample, percent_missing): ddRADseq.M15_GT23.00277_ACTTC.TTAGGC_S23<br />percent_missing: 83.44847","reorder(sample, percent_missing): ddRADseq.M26_GT23.00286_TCGAT.TGACCA_S47<br />percent_missing: 68.93611","reorder(sample, percent_missing): ddRADseq.F15_GT23.00257_GGTTG.ATCACG_S90<br />percent_missing: 61.34642","reorder(sample, percent_missing): ddRADseq.F55_GT23.00272_AACCA.CGATGT_S35<br />percent_missing: 76.76878","reorder(sample, percent_missing): ddRADseq.M24_GT23.00284_ACACA.TTAGGC_S17<br />percent_missing: 87.71261","reorder(sample, percent_missing): ddRADseq.M29_GT23.00288_ACTTC.TGACCA_S21<br />percent_missing: 48.19191","reorder(sample, percent_missing): ddRADseq.F23_GT23.00260_AACCA.ATCACG_S11<br />percent_missing: 63.02349","reorder(sample, percent_missing): ddRADseq.M28_GT23.00287_GCATG.TGACCA_S69<br />percent_missing: 79.12240"],"type":"scatter","mode":"markers","marker":{"autocolorscale":false,"color":"transparent","opacity":1,"size":5.66929133858268,"symbol":"circle","line":{"width":1.88976377952756,"color":"rgba(0,0,0,1)"}},"hoveron":"points","showlegend":false,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null}],"layout":{"margin":{"t":43.7625570776256,"r":7.30593607305936,"b":28.4931506849315,"l":43.1050228310502},"plot_bgcolor":"rgba(255,255,255,1)","paper_bgcolor":"rgba(255,255,255,1)","font":{"color":"rgba(0,0,0,1)","family":"","size":14.6118721461187},"title":{"text":"DO Missing Genotypes","font":{"color":"rgba(0,0,0,1)","family":"","size":17.5342465753425},"x":0,"xref":"paper"},"xaxis":{"domain":[0,1],"automargin":true,"type":"linear","autorange":false,"range":[0.4,48.6],"tickmode":"array","ticktext":["ddRADseq.M03_GT23.00273_AGCTA.TTAGGC_S74","ddRADseq.M25_GT23.00285_CGATC.TGACCA_S51","ddRADseq.M29_GT23.00288_ACTTC.TGACCA_S21","ddRADseq.F26_GT23.00262_AGCTA.CGATGT_S43","ddRADseq.F28_GT23.00263_CGATC.CGATGT_S62","ddRADseq.M20_GT23.00281_ACGGT.TTAGGC_S15","ddRADseq.F29_GT23.00264_TCGAT.CGATGT_S52","ddRADseq.M11_GT23.00275_TCGAT.TTAGGC_S80","ddRADseq.F19_GT23.00259_AAGGA.ATCACG_S41","ddRADseq.F07_GT23.00252_TCGAT.ATCACG_S64","ddRADseq.M32_GT23.00290_ATACG.TGACCA_S4","ddRADseq.F15_GT23.00257_GGTTG.ATCACG_S90","ddRADseq.F23_GT23.00260_AACCA.ATCACG_S11","ddRADseq.F37_GT23.00269_GGTTG.CGATGT_S72","ddRADseq.F14_GT23.00256_ATACG.ATCACG_S6","ddRADseq.F12_GT23.00255_CAACC.ATCACG_S20","ddRADseq.M17_GT23.00279_ATACG.TTAGGC_S88","ddRADseq.F36_GT23.00268_ATACG.CGATGT_S94","ddRADseq.M26_GT23.00286_TCGAT.TGACCA_S47","ddRADseq.M30_GT23.00289_CAACC.TGACCA_S60","ddRADseq.F03_GT23.00250_AGCTA.ATCACG_S67","ddRADseq.F39_GT23.00270_ACGGT.CGATGT_S34","ddRADseq.M23_GT23.00283_AACCA.TTAGGC_S31","ddRADseq.F24_GT23.00261_ACACA.CGATGT_S44","ddRADseq.F17_GT23.00258_ACGGT.ATCACG_S45","ddRADseq.F55_GT23.00272_AACCA.CGATGT_S35","ddRADseq.F32_GT23.00266_ACTTC.CGATGT_S5","ddRADseq.M38_GT23.00293_AAGGA.TGACCA_S19","ddRADseq.F40_GT23.00271_AAGGA.CGATGT_S77","ddRADseq.M28_GT23.00287_GCATG.TGACCA_S69","ddRADseq.M19_GT23.00280_GGTTG.TTAGGC_S82","ddRADseq.M34_GT23.00291_GGTTG.TGACCA_S86","ddRADseq.M04_GT23.00274_CGATC.TTAGGC_S93","ddRADseq.M16_GT23.00278_CAACC.TTAGGC_S8","ddRADseq.M15_GT23.00277_ACTTC.TTAGGC_S23","ddRADseq.M58_GT23.00296_AGCTA.TGACCA_S49","ddRADseq.M24_GT23.00284_ACACA.TTAGGC_S17","ddRADseq.M21_GT23.00282_AAGGA.TTAGGC_S83","ddRADseq.F10_GT23.00254_ACTTC.ATCACG_S66","ddRADseq.M14_GT23.00276_GCATG.TTAGGC_S96","ddRADseq.F31_GT23.00265_GCATG.CGATGT_S28","ddRADseq.F02_GT23.00249_ACACA.ATCACG_S1","ddRADseq.M35_GT23.00292_ACGGT.TGACCA_S40","ddRADseq.F33_GT23.00267_CAACC.CGATGT_S10","ddRADseq.M45_GT23.00295_ACACA.TGACCA_S25","ddRADseq.M39_GT23.00294_AACCA.TGACCA_S2","ddRADseq.F08_GT23.00253_GCATG.ATCACG_S22","ddRADseq.F04_GT23.00251_CGATC.ATCACG_S9"],"tickvals":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48],"categoryorder":"array","categoryarray":["ddRADseq.M03_GT23.00273_AGCTA.TTAGGC_S74","ddRADseq.M25_GT23.00285_CGATC.TGACCA_S51","ddRADseq.M29_GT23.00288_ACTTC.TGACCA_S21","ddRADseq.F26_GT23.00262_AGCTA.CGATGT_S43","ddRADseq.F28_GT23.00263_CGATC.CGATGT_S62","ddRADseq.M20_GT23.00281_ACGGT.TTAGGC_S15","ddRADseq.F29_GT23.00264_TCGAT.CGATGT_S52","ddRADseq.M11_GT23.00275_TCGAT.TTAGGC_S80","ddRADseq.F19_GT23.00259_AAGGA.ATCACG_S41","ddRADseq.F07_GT23.00252_TCGAT.ATCACG_S64","ddRADseq.M32_GT23.00290_ATACG.TGACCA_S4","ddRADseq.F15_GT23.00257_GGTTG.ATCACG_S90","ddRADseq.F23_GT23.00260_AACCA.ATCACG_S11","ddRADseq.F37_GT23.00269_GGTTG.CGATGT_S72","ddRADseq.F14_GT23.00256_ATACG.ATCACG_S6","ddRADseq.F12_GT23.00255_CAACC.ATCACG_S20","ddRADseq.M17_GT23.00279_ATACG.TTAGGC_S88","ddRADseq.F36_GT23.00268_ATACG.CGATGT_S94","ddRADseq.M26_GT23.00286_TCGAT.TGACCA_S47","ddRADseq.M30_GT23.00289_CAACC.TGACCA_S60","ddRADseq.F03_GT23.00250_AGCTA.ATCACG_S67","ddRADseq.F39_GT23.00270_ACGGT.CGATGT_S34","ddRADseq.M23_GT23.00283_AACCA.TTAGGC_S31","ddRADseq.F24_GT23.00261_ACACA.CGATGT_S44","ddRADseq.F17_GT23.00258_ACGGT.ATCACG_S45","ddRADseq.F55_GT23.00272_AACCA.CGATGT_S35","ddRADseq.F32_GT23.00266_ACTTC.CGATGT_S5","ddRADseq.M38_GT23.00293_AAGGA.TGACCA_S19","ddRADseq.F40_GT23.00271_AAGGA.CGATGT_S77","ddRADseq.M28_GT23.00287_GCATG.TGACCA_S69","ddRADseq.M19_GT23.00280_GGTTG.TTAGGC_S82","ddRADseq.M34_GT23.00291_GGTTG.TGACCA_S86","ddRADseq.M04_GT23.00274_CGATC.TTAGGC_S93","ddRADseq.M16_GT23.00278_CAACC.TTAGGC_S8","ddRADseq.M15_GT23.00277_ACTTC.TTAGGC_S23","ddRADseq.M58_GT23.00296_AGCTA.TGACCA_S49","ddRADseq.M24_GT23.00284_ACACA.TTAGGC_S17","ddRADseq.M21_GT23.00282_AAGGA.TTAGGC_S83","ddRADseq.F10_GT23.00254_ACTTC.ATCACG_S66","ddRADseq.M14_GT23.00276_GCATG.TTAGGC_S96","ddRADseq.F31_GT23.00265_GCATG.CGATGT_S28","ddRADseq.F02_GT23.00249_ACACA.ATCACG_S1","ddRADseq.M35_GT23.00292_ACGGT.TGACCA_S40","ddRADseq.F33_GT23.00267_CAACC.CGATGT_S10","ddRADseq.M45_GT23.00295_ACACA.TGACCA_S25","ddRADseq.M39_GT23.00294_AACCA.TGACCA_S2","ddRADseq.F08_GT23.00253_GCATG.ATCACG_S22","ddRADseq.F04_GT23.00251_CGATC.ATCACG_S9"],"nticks":null,"ticks":"","tickcolor":null,"ticklen":3.65296803652968,"tickwidth":0,"showticklabels":false,"tickfont":{"color":null,"family":null,"size":0},"tickangle":-0,"showline":false,"linecolor":null,"linewidth":0,"showgrid":false,"gridcolor":null,"gridwidth":0,"zeroline":false,"anchor":"y","title":{"text":"reorder(sample, percent_missing)","font":{"color":"rgba(0,0,0,1)","family":"","size":14.6118721461187}},"hoverformat":".2f"},"yaxis":{"domain":[0,1],"automargin":true,"type":"linear","autorange":false,"range":[29.4797274762971,101.750917147077],"tickmode":"array","ticktext":["40","60","80","100"],"tickvals":[40,60,80,100],"categoryorder":"array","categoryarray":["40","60","80","100"],"nticks":null,"ticks":"outside","tickcolor":"rgba(51,51,51,1)","ticklen":3.65296803652968,"tickwidth":0.66417600664176,"showticklabels":true,"tickfont":{"color":"rgba(77,77,77,1)","family":"","size":11.689497716895},"tickangle":-0,"showline":false,"linecolor":null,"linewidth":0,"showgrid":false,"gridcolor":null,"gridwidth":0,"zeroline":false,"anchor":"x","title":{"text":"percent_missing","font":{"color":"rgba(0,0,0,1)","family":"","size":14.6118721461187}},"hoverformat":".2f"},"shapes":[{"type":"rect","fillcolor":"transparent","line":{"color":"rgba(51,51,51,1)","width":0.66417600664176,"linetype":"solid"},"yref":"paper","xref":"paper","x0":0,"x1":1,"y0":0,"y1":1}],"showlegend":false,"legend":{"bgcolor":"rgba(255,255,255,1)","bordercolor":"transparent","borderwidth":1.88976377952756,"font":{"color":"rgba(0,0,0,1)","family":"","size":11.689497716895}},"hovermode":"closest","barmode":"relative"},"config":{"doubleClick":"reset","modeBarButtonsToAdd":["hoverclosest","hovercompare"],"showSendToCloud":false},"source":"A","attrs":{"17e63195f8fc1":{"x":{},"y":{},"type":"scatter"}},"cur_data":"17e63195f8fc1","visdat":{"17e63195f8fc1":["function (y) ","x"]},"highlight":{"on":"plotly_click","persistent":false,"dynamic":false,"selectize":false,"opacityDim":0.2,"selected":{"opacity":1},"debounce":0},"shinyEvents":["plotly_hover","plotly_click","plotly_selected","plotly_relayout","plotly_brushed","plotly_brushing","plotly_clickannotation","plotly_doubleclick","plotly_deselect","plotly_afterplot","plotly_sunburstclick"],"base_url":"https://plot.ly"},"evals":[],"jsHooks":[]}</script>
+<pre class="r"><code>percent_missing_cutoff &lt;- 10</code></pre>
+<p>48 DO sample(s) is/are missing data for greater than 10% of
+markers.</p>
+</div>
+<div id="sample-duplicates-1" class="section level2">
+<h2>Sample Duplicates</h2>
+<pre class="r"><code># Determine if any samples are duplicates based on genetic similarity
+cg &lt;- qtl2::compare_geno(ddRADseq_DO, cores=0)
+qtl2::plot_compare_geno(x = cg, rug = T, main = &quot;DO - ddRADseq Data&quot;)</code></pre>
+<p><img src="figure/HR_from_stitch.Rmd/sample%20duplicates%20DO-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-sample-duplicates-DO-1">
+Past versions of "sample duplicates DO-1.png"
+</button>
+</p>
+<div id="fig-no-spaces-sample-duplicates-DO-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/TheJacksonLaboratory/lcGBS_wf/blob/18aadff4644ce0270df495c357f1c36d6773ca0e/docs/figure/HR_from_stitch.Rmd/sample duplicates DO-1.png" target="_blank">18aadff</a>
+</td>
+<td>
+sam-widmayer
+</td>
+<td>
+2023-02-09
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>There are many “duplicates” among the DO ddRADseq samples as well.
+Compared to the DO GigaMUGA samples:</p>
+<pre class="r"><code>cgGM &lt;- qtl2::compare_geno(DO_cross, cores=0)
+qtl2::plot_compare_geno(x = cgGM, rug = T, main = &quot;DO - GigaMUGA Data&quot;)</code></pre>
+<p><img src="figure/HR_from_stitch.Rmd/sample%20duplicates%20DO%20GM-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-sample-duplicates-DO-GM-1">
+Past versions of "sample duplicates DO GM-1.png"
+</button>
+</p>
+<div id="fig-no-spaces-sample-duplicates-DO-GM-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/TheJacksonLaboratory/lcGBS_wf/blob/18aadff4644ce0270df495c357f1c36d6773ca0e/docs/figure/HR_from_stitch.Rmd/sample duplicates DO GM-1.png" target="_blank">18aadff</a>
+</td>
+<td>
+sam-widmayer
+</td>
+<td>
+2023-02-09
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div id="haplotype-reconstruction-1" class="section level2">
+<h2>Haplotype Reconstruction</h2>
+<pre class="r"><code># Insert pseudomarkers
+dd_DO_map &lt;- qtl2::insert_pseudomarkers(ddRADseq_DO$gmap, step = 1)
+
+# Calculate genotype probs
+dir.create(&quot;results/DO_ddRADseq_pr&quot;, showWarnings = F)
+fpr_ddDO &lt;- suppressWarnings(qtl2fst::calc_genoprob_fst(cross = ddRADseq_DO, 
+                                                   map = dd_DO_map,
+                                                   fbase = &quot;pr&quot;,
+                                                   fdir = &quot;results/DO_ddRADseq_pr&quot;,
+                                                   error_prob=0.002, 
+                                                   overwrite=TRUE,cores = parallel::detectCores()))
+
+# Make viterbi
+ddDO_m &lt;- maxmarg(fpr_ddDO, minprob=0.5)
+
+# Phase genotypes
+ddDO_ph &lt;- qtl2::guess_phase(cross = ddRADseq_DO, geno = ddDO_m)
+
+# Write Plots
+for(i in 1:nrow(ddRADseq_DO$cross_info)){
+  png(file=paste0(&quot;output/plot_onegeno_&quot;,rownames(ddRADseq_DO$cross_info)[i],&quot;.png&quot;))
+  qtl2::plot_onegeno(geno = ddDO_ph, 
+                     map = dd_DO_map,
+                     ind = i, 
+                     col = c(qtl2::CCcolors)) # add legends here
+  legend(16, 70, 
+         legend=c(&quot;A&quot;, &quot;B&quot;, &quot;C&quot;, &quot;D&quot;,
+                  &quot;E&quot;, &quot;F&quot;, &quot;G&quot;, &quot;H&quot;),
+         fill=c(qtl2::CCcolors), cex=0.8)
+  dev.off()
+}</code></pre>
+<p>Below are example chromosome paintings of haplotype reconstructions
+from DO ddRADseq samples compared to the same individuals genotyped with
+GigaMUGA.</p>
+<pre class="r"><code># GigaMUGA haplotypes
+load(&quot;data/DO_genoprobs.RData&quot;)
+gm_m_DO &lt;- maxmarg(pr, minprob=0.5)
+gm_ph_DO &lt;- qtl2::guess_phase(cross = DO_cross, geno = gm_m_DO)
+gm_map_DO &lt;- qtl2::insert_pseudomarkers(DO_cross$gmap, step = 1)
+
+# Example plots
+indivs &lt;- sample(seq(1:nrow(ddRADseq_DO$cross_info)), size = 5, replace = F)
+
+# ddRADseq
+plot_indiv &lt;- rownames(ddRADseq_DO$cross_info)[indivs[1]]
+qtl2::plot_onegeno(geno = ddDO_ph, 
+                   map = dd_DO_map,
+                   ind = plot_indiv, 
+                   col = c(qtl2::CCcolors),
+                   main = plot_indiv) # add legends here
+legend(16, 65, legend=LETTERS[1:8], fill=c(qtl2::CCcolors), cex=0.8)</code></pre>
+<p><img src="figure/HR_from_stitch.Rmd/haplotype%20plots%20DO-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-haplotype-plots-DO-1">
+Past versions of "haplotype plots DO-1.png"
+</button>
+</p>
+<div id="fig-no-spaces-haplotype-plots-DO-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/TheJacksonLaboratory/lcGBS_wf/blob/18aadff4644ce0270df495c357f1c36d6773ca0e/docs/figure/HR_from_stitch.Rmd/haplotype plots DO-1.png" target="_blank">18aadff</a>
+</td>
+<td>
+sam-widmayer
+</td>
+<td>
+2023-02-09
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<pre class="r"><code># DO
+do_sample_index  &lt;- grep(pattern = gsub(strsplit(plot_indiv, split = &quot;_&quot;)[[1]][1], 
+                                        pattern = &quot;ddRADseq.&quot;,
+                                        replacement = &quot;&quot;),
+                         x = gsub(rownames(DO_cross$cross_info), 
+                                  pattern = &quot;-&quot;, 
+                                  replacement = &quot;.&quot;))
+qtl2::plot_onegeno(geno = gm_ph_DO, 
+                   map = gm_map_DO,
+                   ind = do_sample_index, 
+                   col = c(qtl2::CCcolors),
+                   main = rownames(DO_cross$cross_info)[do_sample_index]) # add legends here
+legend(16, 65, legend=LETTERS[1:8], fill=c(qtl2::CCcolors), cex=0.8)</code></pre>
+<p><img src="figure/HR_from_stitch.Rmd/haplotype%20plots%20DO-2.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-haplotype-plots-DO-2">
+Past versions of "haplotype plots DO-2.png"
+</button>
+</p>
+<div id="fig-no-spaces-haplotype-plots-DO-2" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/TheJacksonLaboratory/lcGBS_wf/blob/18aadff4644ce0270df495c357f1c36d6773ca0e/docs/figure/HR_from_stitch.Rmd/haplotype plots DO-2.png" target="_blank">18aadff</a>
+</td>
+<td>
+sam-widmayer
+</td>
+<td>
+2023-02-09
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<pre class="r"><code>plot_indiv &lt;- rownames(ddRADseq_DO$cross_info)[indivs[2]]
+qtl2::plot_onegeno(geno = ddDO_ph, 
+                   map = dd_DO_map,
+                   ind = plot_indiv, 
+                   col = c(qtl2::CCcolors),
+                   main = plot_indiv) # add legends here
+legend(16, 65, legend=LETTERS[1:8], fill=c(qtl2::CCcolors), cex=0.8)</code></pre>
+<p><img src="figure/HR_from_stitch.Rmd/haplotype%20plots%20DO-3.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-haplotype-plots-DO-3">
+Past versions of "haplotype plots DO-3.png"
+</button>
+</p>
+<div id="fig-no-spaces-haplotype-plots-DO-3" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/TheJacksonLaboratory/lcGBS_wf/blob/18aadff4644ce0270df495c357f1c36d6773ca0e/docs/figure/HR_from_stitch.Rmd/haplotype plots DO-3.png" target="_blank">18aadff</a>
+</td>
+<td>
+sam-widmayer
+</td>
+<td>
+2023-02-09
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<pre class="r"><code>do_sample_index  &lt;- grep(pattern = gsub(strsplit(plot_indiv, split = &quot;_&quot;)[[1]][1], 
+                                        pattern = &quot;ddRADseq.&quot;,
+                                        replacement = &quot;&quot;),
+                         x = gsub(rownames(DO_cross$cross_info), 
+                                  pattern = &quot;-&quot;, 
+                                  replacement = &quot;.&quot;))
+qtl2::plot_onegeno(geno = gm_ph_DO, 
+                   map = gm_map_DO,
+                   ind = do_sample_index, 
+                   col = c(qtl2::CCcolors),
+                   main = rownames(DO_cross$cross_info)[do_sample_index]) # add legends here
+legend(16, 65, legend=LETTERS[1:8], fill=c(qtl2::CCcolors), cex=0.8)</code></pre>
+<p><img src="figure/HR_from_stitch.Rmd/haplotype%20plots%20DO-4.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-haplotype-plots-DO-4">
+Past versions of "haplotype plots DO-4.png"
+</button>
+</p>
+<div id="fig-no-spaces-haplotype-plots-DO-4" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/TheJacksonLaboratory/lcGBS_wf/blob/18aadff4644ce0270df495c357f1c36d6773ca0e/docs/figure/HR_from_stitch.Rmd/haplotype plots DO-4.png" target="_blank">18aadff</a>
+</td>
+<td>
+sam-widmayer
+</td>
+<td>
+2023-02-09
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<pre class="r"><code>plot_indiv &lt;- rownames(ddRADseq_DO$cross_info)[indivs[3]]
+qtl2::plot_onegeno(geno = ddDO_ph, 
+                   map = dd_DO_map,
+                   ind = plot_indiv, 
+                   col = c(qtl2::CCcolors),
+                   main = plot_indiv) # add legends here
+legend(16, 65, legend=LETTERS[1:8], fill=c(qtl2::CCcolors), cex=0.8)</code></pre>
+<p><img src="figure/HR_from_stitch.Rmd/haplotype%20plots%20DO-5.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-haplotype-plots-DO-5">
+Past versions of "haplotype plots DO-5.png"
+</button>
+</p>
+<div id="fig-no-spaces-haplotype-plots-DO-5" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/TheJacksonLaboratory/lcGBS_wf/blob/18aadff4644ce0270df495c357f1c36d6773ca0e/docs/figure/HR_from_stitch.Rmd/haplotype plots DO-5.png" target="_blank">18aadff</a>
+</td>
+<td>
+sam-widmayer
+</td>
+<td>
+2023-02-09
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<pre class="r"><code>do_sample_index  &lt;- grep(pattern = gsub(strsplit(plot_indiv, split = &quot;_&quot;)[[1]][1], 
+                                        pattern = &quot;ddRADseq.&quot;,
+                                        replacement = &quot;&quot;),
+                         x = gsub(rownames(DO_cross$cross_info), 
+                                  pattern = &quot;-&quot;, 
+                                  replacement = &quot;.&quot;))
+qtl2::plot_onegeno(geno = gm_ph_DO, 
+                   map = gm_map_DO,
+                   ind = do_sample_index, 
+                   col = c(qtl2::CCcolors),
+                   main = rownames(DO_cross$cross_info)[do_sample_index]) # add legends here
+legend(16, 65, legend=LETTERS[1:8], fill=c(qtl2::CCcolors), cex=0.8)</code></pre>
+<p><img src="figure/HR_from_stitch.Rmd/haplotype%20plots%20DO-6.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-haplotype-plots-DO-6">
+Past versions of "haplotype plots DO-6.png"
+</button>
+</p>
+<div id="fig-no-spaces-haplotype-plots-DO-6" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/TheJacksonLaboratory/lcGBS_wf/blob/18aadff4644ce0270df495c357f1c36d6773ca0e/docs/figure/HR_from_stitch.Rmd/haplotype plots DO-6.png" target="_blank">18aadff</a>
+</td>
+<td>
+sam-widmayer
+</td>
+<td>
+2023-02-09
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<pre class="r"><code>plot_indiv &lt;- rownames(ddRADseq_DO$cross_info)[indivs[4]]
+qtl2::plot_onegeno(geno = ddDO_ph, 
+                   map = dd_DO_map,
+                   ind = plot_indiv, 
+                   col = c(qtl2::CCcolors),
+                   main = plot_indiv) # add legends here
+legend(16, 65, legend=LETTERS[1:8], fill=c(qtl2::CCcolors), cex=0.8)</code></pre>
+<p><img src="figure/HR_from_stitch.Rmd/haplotype%20plots%20DO-7.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-haplotype-plots-DO-7">
+Past versions of "haplotype plots DO-7.png"
+</button>
+</p>
+<div id="fig-no-spaces-haplotype-plots-DO-7" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/TheJacksonLaboratory/lcGBS_wf/blob/18aadff4644ce0270df495c357f1c36d6773ca0e/docs/figure/HR_from_stitch.Rmd/haplotype plots DO-7.png" target="_blank">18aadff</a>
+</td>
+<td>
+sam-widmayer
+</td>
+<td>
+2023-02-09
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<pre class="r"><code>do_sample_index  &lt;- grep(pattern = gsub(strsplit(plot_indiv, split = &quot;_&quot;)[[1]][1], 
+                                        pattern = &quot;ddRADseq.&quot;,
+                                        replacement = &quot;&quot;),
+                         x = gsub(rownames(DO_cross$cross_info), 
+                                  pattern = &quot;-&quot;, 
+                                  replacement = &quot;.&quot;))
+qtl2::plot_onegeno(geno = gm_ph_DO, 
+                   map = gm_map_DO,
+                   ind = do_sample_index, 
+                   col = c(qtl2::CCcolors),
+                   main = rownames(DO_cross$cross_info)[do_sample_index]) # add legends here
+legend(16, 65, legend=LETTERS[1:8], fill=c(qtl2::CCcolors), cex=0.8)</code></pre>
+<p><img src="figure/HR_from_stitch.Rmd/haplotype%20plots%20DO-8.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-haplotype-plots-DO-8">
+Past versions of "haplotype plots DO-8.png"
+</button>
+</p>
+<div id="fig-no-spaces-haplotype-plots-DO-8" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/TheJacksonLaboratory/lcGBS_wf/blob/18aadff4644ce0270df495c357f1c36d6773ca0e/docs/figure/HR_from_stitch.Rmd/haplotype plots DO-8.png" target="_blank">18aadff</a>
+</td>
+<td>
+sam-widmayer
+</td>
+<td>
+2023-02-09
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<pre class="r"><code>plot_indiv &lt;- rownames(ddRADseq_DO$cross_info)[indivs[5]]
+qtl2::plot_onegeno(geno = ddDO_ph, 
+                   map = dd_DO_map,
+                   ind = plot_indiv, 
+                   col = c(qtl2::CCcolors),
+                   main = plot_indiv) # add legends here
+legend(16, 65, legend=LETTERS[1:8], fill=c(qtl2::CCcolors), cex=0.8)</code></pre>
+<p><img src="figure/HR_from_stitch.Rmd/haplotype%20plots%20DO-9.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-haplotype-plots-DO-9">
+Past versions of "haplotype plots DO-9.png"
+</button>
+</p>
+<div id="fig-no-spaces-haplotype-plots-DO-9" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/TheJacksonLaboratory/lcGBS_wf/blob/18aadff4644ce0270df495c357f1c36d6773ca0e/docs/figure/HR_from_stitch.Rmd/haplotype plots DO-9.png" target="_blank">18aadff</a>
+</td>
+<td>
+sam-widmayer
+</td>
+<td>
+2023-02-09
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<pre class="r"><code>do_sample_index  &lt;- grep(pattern = gsub(strsplit(plot_indiv, split = &quot;_&quot;)[[1]][1], 
+                                        pattern = &quot;ddRADseq.&quot;,
+                                        replacement = &quot;&quot;),
+                         x = gsub(rownames(DO_cross$cross_info), 
+                                  pattern = &quot;-&quot;, 
+                                  replacement = &quot;.&quot;))
+qtl2::plot_onegeno(geno = gm_ph_DO, 
+                   map = gm_map_DO,
+                   ind = do_sample_index, 
+                   col = c(qtl2::CCcolors),
+                   main = rownames(DO_cross$cross_info)[do_sample_index]) # add legends here
+legend(16, 65, legend=LETTERS[1:8], fill=c(qtl2::CCcolors), cex=0.8)</code></pre>
+<p><img src="figure/HR_from_stitch.Rmd/haplotype%20plots%20DO-10.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-no-spaces-haplotype-plots-DO-10">
+Past versions of "haplotype plots DO-10.png"
+</button>
+</p>
+<div id="fig-no-spaces-haplotype-plots-DO-10" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/TheJacksonLaboratory/lcGBS_wf/blob/18aadff4644ce0270df495c357f1c36d6773ca0e/docs/figure/HR_from_stitch.Rmd/haplotype plots DO-10.png" target="_blank">18aadff</a>
+</td>
+<td>
+sam-widmayer
+</td>
+<td>
+2023-02-09
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div id="comparing-resolution" class="section level1">
+<h1>Comparing Resolution</h1>
+<p>One question we are ultimately interested in is whether low-pass WGS
+followed by GBS will provide additional resolution for mapping. Mapping
+resolution is effectively determined by 1) the number of mice in the
+cross (number of meioses) and 2) the number of markers with which we’re
+able to capture these recombination events. Below we counted the number
+of markers available for each genotyping method.</p>
+<pre class="r"><code># make cross objects in a list
+qtl2objects &lt;- list(DO_cross, ddRADseq_DO, X4WC_cross, ddRADseq_4WC)
+names(qtl2objects) &lt;- c(&quot;DO_GigaMUGA&quot;,&quot;DO_ddRADseq&quot;,&quot;4WC_GigaMUGA&quot;,&quot;4WC_ddRADseq&quot;)
+
+# Count the number of markers per chromosome for each population/method
+n_mar_list &lt;- lapply(qtl2objects, function(x) data.frame(qtl2::n_mar(x)))
+
+# wrangle into a df
+n_mar_df &lt;- list()
+for(i in 1:length(n_mar_list)){
+  foo &lt;- data.frame(n_mar_list[[i]])
+  colnames(foo) &lt;- names(n_mar_list)[i]
+  foo$chromosome &lt;- rownames(foo)
+  rownames(foo) &lt;- NULL
+  foo &lt;- foo %&gt;% dplyr::select(chromosome,everything())
+  n_mar_df[[i]] &lt;- foo
+}
+n_mar_df &lt;- suppressMessages(Reduce(full_join, n_mar_df) %&gt;%
+                               tidyr::pivot_longer(-chromosome, names_to = &quot;method&quot;) %&gt;%
+                               dplyr::mutate(chromosome = as.factor(chromosome)))
+n_mar_df$chromosome &lt;- factor(n_mar_df$chromosome, levels = as.character(c(1:19,&quot;X&quot;)))
+
+# Plot marker counts per chromosome
+ggplot(n_mar_df, mapping = aes(x = chromosome, y = value, fill = method)) + 
+  theme_bw() + 
+  geom_col(position = position_dodge()) + 
+  labs(x = &quot;Chromosome&quot;,
+       y = &quot;Number of Markers&quot;) + 
+  scale_fill_manual(values = brewer.pal(n = length(unique(n_mar_df$method)), 
+                                        name = &quot;Spectral&quot;), 
+                    name = &quot;Population + Genotyping Method&quot;)</code></pre>
+<pre><code>Warning: Removed 3 rows containing missing values (`geom_col()`).</code></pre>
+<p><img src="figure/HR_from_stitch.Rmd/resolution-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-resolution-1">
+Past versions of resolution-1.png
+</button>
+</p>
+<div id="fig-resolution-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/TheJacksonLaboratory/lcGBS_wf/blob/5fc09b392a830f5ab13b3923286024552d0d6b17/docs/figure/HR_from_stitch.Rmd/resolution-1.png" target="_blank">5fc09b3</a>
+</td>
+<td>
+sam-widmayer
+</td>
+<td>
+2023-02-09
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div id="comparing-crossovers" class="section level1">
+<h1>Comparing Crossovers</h1>
+<p>Based on the haplotype plots, we can guess that the genotypes on
+either side of detected crossovers won’t necessarily match, but we
+wanted to establish a baseline for how crossover events are detected
+across genotyping methods.</p>
+<pre class="r"><code># count crossovers for 4WC samples
+xos_dd4WC &lt;- qtl2::count_xo(dd4WC_m, cores=parallel::detectCores())
+xos_gm4WC &lt;- qtl2::count_xo(gm_4WC_m, cores=parallel::detectCores())
+
+# replace ddRADseq sample names with gm sample names
+for(i in 1:length(rownames(xos_gm4WC))){
+  gm_samplename &lt;- gsub(rownames(xos_gm4WC)[i],pattern = &quot;-&quot;, replacement = &quot;.&quot;)
+  dd_index &lt;- grep(gm_samplename, x = rownames(xos_dd4WC))
+  rownames(xos_dd4WC)[dd_index] &lt;- gm_samplename
+  rownames(xos_dd4WC)[dd_index] &lt;- gsub(rownames(xos_dd4WC)[dd_index], pattern = &quot;[.]&quot;, replacement = &quot;-&quot;)
+}
+
+# count crossovers for DO samples
+xos_ddDO &lt;- qtl2::count_xo(ddDO_m, cores=parallel::detectCores())
+xos_gmDO &lt;- qtl2::count_xo(gm_m_DO, cores=parallel::detectCores())
+
+# replace ddRADseq sample names with gm sample names
+for(i in 1:length(rownames(xos_gmDO))){
+  gm_samplename &lt;- gsub(rownames(xos_gmDO)[i],pattern = &quot;-&quot;, replacement = &quot;.&quot;)
+  dd_index &lt;- grep(gm_samplename, x = rownames(xos_ddDO))
+  rownames(xos_ddDO)[dd_index] &lt;- gm_samplename
+  rownames(xos_ddDO)[dd_index] &lt;- gsub(rownames(xos_ddDO)[dd_index], pattern = &quot;[.]&quot;, replacement = &quot;-&quot;)
+}
+
+# transform to df
+xo_list &lt;- list(xos_dd4WC, xos_ddDO, xos_gm4WC, xos_gmDO)
+pop_list &lt;- list(&quot;4WC&quot;, &quot;DO&quot;, &quot;4WC&quot;, &quot;DO&quot;)
+method_list &lt;- list(&quot;ddRADseq&quot;, &quot;ddRADseq&quot;, &quot;GigaMUGA&quot;, &quot;GigaMUGA&quot;)
+xoToDf &lt;- function(xo, pop, method){
+  new_xo &lt;- as.data.frame(xo) %&gt;% 
+    dplyr::mutate(sample = rownames(xo),
+                  population = pop,
+                  gt_method = method)
+  rownames(new_xo) &lt;- NULL
+  return(new_xo)
+}
+all_xos &lt;- purrr::pmap(.l = list(xo_list, pop_list, method_list), .f = xoToDf) %&gt;%
+  Reduce(full_join, .) %&gt;%
+  tidyr::pivot_longer(-c(sample, population, gt_method), names_to = &quot;chromosome&quot;, values_to = &quot;xos&quot;) %&gt;%
+  dplyr::mutate(chromosome = as.factor(chromosome))</code></pre>
+<pre><code>Joining, by = c(&quot;1&quot;, &quot;3&quot;, &quot;4&quot;, &quot;5&quot;, &quot;6&quot;, &quot;7&quot;, &quot;8&quot;, &quot;9&quot;, &quot;10&quot;, &quot;11&quot;, &quot;12&quot;, &quot;13&quot;,
+&quot;14&quot;, &quot;15&quot;, &quot;16&quot;, &quot;17&quot;, &quot;18&quot;, &quot;19&quot;, &quot;sample&quot;, &quot;population&quot;, &quot;gt_method&quot;)
+Joining, by = c(&quot;1&quot;, &quot;2&quot;, &quot;3&quot;, &quot;4&quot;, &quot;5&quot;, &quot;6&quot;, &quot;7&quot;, &quot;8&quot;, &quot;9&quot;, &quot;10&quot;, &quot;11&quot;, &quot;12&quot;,
+&quot;13&quot;, &quot;14&quot;, &quot;15&quot;, &quot;16&quot;, &quot;17&quot;, &quot;18&quot;, &quot;19&quot;, &quot;sample&quot;, &quot;population&quot;, &quot;gt_method&quot;)
+Joining, by = c(&quot;1&quot;, &quot;2&quot;, &quot;3&quot;, &quot;4&quot;, &quot;5&quot;, &quot;6&quot;, &quot;7&quot;, &quot;8&quot;, &quot;9&quot;, &quot;10&quot;, &quot;11&quot;, &quot;12&quot;,
+&quot;13&quot;, &quot;14&quot;, &quot;15&quot;, &quot;16&quot;, &quot;17&quot;, &quot;18&quot;, &quot;19&quot;, &quot;sample&quot;, &quot;population&quot;, &quot;gt_method&quot;,
+&quot;X&quot;)</code></pre>
+<pre class="r"><code>all_xos$chromosome &lt;- factor(all_xos$chromosome, levels = as.character(c(1:19,&quot;X&quot;)))
+
+# Plot crossovers - 4WC
+all_xos %&gt;%
+  dplyr::filter(population == &quot;4WC&quot;) %&gt;%
+  tidyr::pivot_wider(names_from = gt_method, values_from = xos) %&gt;%
+  ggplot(., mapping = aes(x = GigaMUGA, 
+                          y = ddRADseq)) + 
+  theme_bw() + 
+  geom_point(alpha = 0.5) + 
+  geom_abline(slope = 1) + 
+  geom_smooth(method = &quot;lm&quot;) + 
+  facet_wrap(.~chromosome, nrow = 5) + 
+  theme(panel.grid = element_blank()) +
+  labs(x = &quot;Number of Crossovers - GigaMUGA&quot;,
+       y = &quot;Number of Crossovers - ddRADseq&quot;)</code></pre>
+<pre><code>`geom_smooth()` using formula = &#39;y ~ x&#39;</code></pre>
+<pre><code>Warning: Removed 48 rows containing non-finite values (`stat_smooth()`).</code></pre>
+<pre><code>Warning: Removed 48 rows containing missing values (`geom_point()`).</code></pre>
+<p><img src="figure/HR_from_stitch.Rmd/xo%20correlation-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code># Plot crossovers - DO
+all_xos %&gt;%
+  dplyr::filter(population == &quot;DO&quot;) %&gt;%
+  tidyr::pivot_wider(names_from = gt_method, values_from = xos) %&gt;%
+  ggplot(., mapping = aes(x = GigaMUGA, 
+                          y = ddRADseq)) + 
+  theme_bw() + 
+  geom_point(alpha = 0.5) + 
+  geom_abline(slope = 1) + 
+  geom_smooth(method = &quot;lm&quot;) + 
+  facet_wrap(.~chromosome, nrow = 5) + 
+  theme(panel.grid = element_blank()) +
+  labs(x = &quot;Number of Crossovers - GigaMUGA&quot;,
+       y = &quot;Number of Crossovers - ddRADseq&quot;)</code></pre>
+<pre><code>`geom_smooth()` using formula = &#39;y ~ x&#39;</code></pre>
+<pre><code>Warning: Removed 96 rows containing non-finite values (`stat_smooth()`).</code></pre>
+<pre><code>Warning: Removed 96 rows containing missing values (`geom_point()`).</code></pre>
+<p><img src="figure/HR_from_stitch.Rmd/xo%20correlation-2.png" width="672" style="display: block; margin: auto;" /></p>
+<p>As expected based on previous analyses, there is no correlation
+between crossover events in the same samples using different genotyping
+methods. We hypothesize this concordance will improve with better
+sequencing coverage and, therefore, greater genotyping and haplotype
+inference accuracy by STITCH.</p>
+<br>
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
+<span class="glyphicon glyphicon-wrench" aria-hidden="true"></span>
+Session information
+</button>
+</p>
+<div id="workflowr-sessioninfo" class="collapse">
+<pre class="r"><code>sessionInfo()</code></pre>
+<pre><code>R version 4.2.1 (2022-06-23)
+Platform: x86_64-apple-darwin17.0 (64-bit)
+Running under: macOS Big Sur ... 10.16
+
+Matrix products: default
+BLAS:   /Library/Frameworks/R.framework/Versions/4.2/Resources/lib/libRblas.0.dylib
+LAPACK: /Library/Frameworks/R.framework/Versions/4.2/Resources/lib/libRlapack.dylib
+
+locale:
+[1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+ [1] fstcore_0.9.12     RColorBrewer_1.1-3 forcats_0.5.2      stringr_1.4.1     
+ [5] dplyr_1.0.10       purrr_0.3.5        readr_2.1.3        tidyr_1.2.1       
+ [9] tibble_3.1.8       ggplot2_3.4.0      tidyverse_1.3.2    qtl2fst_0.26      
+[13] qtl2_0.28          workflowr_1.7.0   
+
+loaded via a namespace (and not attached):
+ [1] nlme_3.1-157        fs_1.5.2            lubridate_1.9.0    
+ [4] bit64_4.0.5         httr_1.4.4          rprojroot_2.0.3    
+ [7] tools_4.2.1         backports_1.4.1     bslib_0.4.1        
+[10] utf8_1.2.2          R6_2.5.1            mgcv_1.8-40        
+[13] lazyeval_0.2.2      DBI_1.1.3           colorspace_2.0-3   
+[16] withr_2.5.0         tidyselect_1.2.0    processx_3.8.0     
+[19] bit_4.0.4           compiler_4.2.1      git2r_0.30.1       
+[22] cli_3.4.1           rvest_1.0.3         xml2_1.3.3         
+[25] plotly_4.10.1       labeling_0.4.2      sass_0.4.2         
+[28] scales_1.2.1        callr_3.7.3         digest_0.6.30      
+[31] rmarkdown_2.18      pkgconfig_2.0.3     htmltools_0.5.3    
+[34] fst_0.9.8           highr_0.9           dbplyr_2.2.1       
+[37] fastmap_1.1.0       htmlwidgets_1.5.4   rlang_1.0.6        
+[40] readxl_1.4.1        rstudioapi_0.14     RSQLite_2.2.18     
+[43] farver_2.1.1        jquerylib_0.1.4     generics_0.1.3     
+[46] jsonlite_1.8.3      crosstalk_1.2.0     vroom_1.6.0        
+[49] googlesheets4_1.0.1 magrittr_2.0.3      Matrix_1.5-3       
+[52] Rcpp_1.0.9          munsell_0.5.0       fansi_1.0.3        
+[55] lifecycle_1.0.3     stringi_1.7.8       whisker_0.4        
+[58] yaml_2.3.6          grid_4.2.1          blob_1.2.3         
+[61] parallel_4.2.1      promises_1.2.0.1    crayon_1.5.2       
+[64] lattice_0.20-45     splines_4.2.1       haven_2.5.1        
+[67] hms_1.1.2           knitr_1.40          ps_1.7.2           
+[70] pillar_1.8.1        reprex_2.0.2        glue_1.6.2         
+[73] evaluate_0.18       getPass_0.2-2       data.table_1.14.4  
+[76] modelr_0.1.10       vctrs_0.5.0         tzdb_0.3.0         
+[79] httpuv_1.6.6        cellranger_1.1.0    gtable_0.3.1       
+[82] assertthat_0.2.1    cachem_1.0.6        xfun_0.34          
+[85] broom_1.0.1         later_1.3.0         viridisLite_0.4.1  
+[88] googledrive_2.0.0   gargle_1.2.1        memoise_2.0.1      
+[91] timechange_0.1.1    ellipsis_0.3.2     </code></pre>
+</div>
+</div>
+
+
+<!-- Adjust MathJax settings so that all math formulae are shown using
+TeX fonts only; see
+https://docs.mathjax.org/en/latest/web/configuration.html. This will make
+the presentation more consistent at the cost of the webpage sometimes
+taking slightly longer to load. Note that this only works because the
+footer is added to webpages before the MathJax javascript. -->
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    "HTML-CSS": { availableFonts: ["TeX"] }
+  });
+</script>
+
+
+
+
+</div>
+</div>
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.odd').parent('tbody').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open');
+  });
+});
+</script>
+
+<!-- code folding -->
+<script>
+$(document).ready(function () {
+  window.initializeCodeFolding("hide" === "show");
+});
+</script>
+
+<script>
+$(document).ready(function ()  {
+
+    // temporarily add toc-ignore selector to headers for the consistency with Pandoc
+    $('.unlisted.unnumbered').addClass('toc-ignore')
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2,h3",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_');
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = true;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

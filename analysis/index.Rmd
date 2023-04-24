@@ -1,0 +1,13 @@
+---
+title: "GBS SSIF: Using low-pass GBS for haplotype reconstruction in diverse mouse populations"
+site: workflowr::wflow_site
+output:
+  workflowr::wflow_html:
+    toc: false
+editor_options:
+  chunk_output_type: console
+---
+
+## Analyses
+
+1\. [ddRADseq Test Sample Diagnostics](HR_from_stitch.html)

@@ -1,0 +1,17 @@
+name: "lcGBS_wf"
+output_dir: ../docs
+navbar:
+  title: "GBS SSIF Analyses"
+  left:
+  - text: Home
+    href: index.html
+  - text: About
+    href: about.html
+  - text: License
+    href: license.html
+output:
+  workflowr::wflow_html:
+    toc: yes
+    toc_float: yes
+    theme: flatly
+    highlight: textmate

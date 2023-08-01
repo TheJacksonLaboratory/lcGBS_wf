@@ -31,4 +31,4 @@ RUN R -e "install.packages('remotes', repos='http://cran.us.r-project.org')"
 RUN R -e "remotes::install_github('rqtl/qtl2')"
 RUN R -e "install.packages('qtl2convert')"
 RUN R -e "remotes::install_github('rqtl/mmconvert')"
-
+RUN R -e "install.packages('stringr')"
